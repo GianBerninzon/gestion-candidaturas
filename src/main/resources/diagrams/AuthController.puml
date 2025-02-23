@@ -1,0 +1,53 @@
+@startuml
+start
+
+:Iniciar pruebas;
+
+:Test: testRegister_UsuarioNuevo;
+if (Usuario existe?) then (no)
+    :Registrar usuario;
+    :Devolver 200;
+else (sí)
+    :Devolver 400;
+endif
+
+:Test: testRegister_UsuarioExistente;
+if (Usuario existe?) then (sí)
+    :Devolver 400;
+else (no)
+    :Registrar usuario;
+    :Devolver 200;
+endif
+
+:Test: testLogin_CredencialesValidas;
+if (Credenciales válidas?) then (sí)
+    :Generar token JWT;
+    :Devolver token;
+else (no)
+    :Lanzar BadCredentialsException;
+endif
+
+:Test: testLogin_CredencialesInvalidas;
+:Devolver BadCredentialsException;
+
+:Test: testDeleteUser _Existe;
+if (Usuario existe?) then (sí)
+    :Eliminar usuario;
+    :Devolver 200;
+else (no)
+    :Devolver 404;
+endif
+
+:Test: testDeleteUser _NoExiste;
+:Devolver 404;
+
+:Test: testDeleteUser _NoAutorizado;
+if (Usuario autorizado?) then (sí)
+    :Eliminar usuario;
+    :Devolver 200;
+else (no)
+    :Lanzar AccessDeniedException;
+endif
+
+stop
+@enduml
