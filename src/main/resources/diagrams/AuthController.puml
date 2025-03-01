@@ -1,53 +1,90 @@
 @startuml
-start
+title EmpresaControllerTest - Flujo de Pruebas
 
-:Iniciar pruebas;
+participant "Test" as Test
+participant "EmpresaController" as EmpresaCtrl
+participant "EmpresaService" as EmpresaSvc
+participant "UserService" as UserSvc
+participant "SecurityConfig" as Security
 
-:Test: testRegister_UsuarioNuevo;
-if (Usuario existe?) then (no)
-    :Registrar usuario;
-    :Devolver 200;
-else (sí)
-    :Devolver 400;
-endif
+== RF-01: Obtener Todas las Empresas ==
 
-:Test: testRegister_UsuarioExistente;
-if (Usuario existe?) then (sí)
-    :Devolver 400;
-else (no)
-    :Registrar usuario;
-    :Devolver 200;
-endif
+Test -> EmpresaCtrl: GET /api/empresas [USER Autenticado]
+activate EmpresaCtrl
+EmpresaCtrl -> EmpresaSvc: getAllEmpresas()
+EmpresaSvc --> EmpresaCtrl: List<Empresa>(1 elemento)
+EmpresaCtrl --> Test: 200 OK + JSON
+deactivate EmpresaCtrl
 
-:Test: testLogin_CredencialesValidas;
-if (Credenciales válidas?) then (sí)
-    :Generar token JWT;
-    :Devolver token;
-else (no)
-    :Lanzar BadCredentialsException;
-endif
+== RF-02: Obtener Empresa por ID ==
 
-:Test: testLogin_CredencialesInvalidas;
-:Devolver BadCredentialsException;
+Test -> EmpresaCtrl: GET /api/empresas/1 [Existente]
+activate EmpresaCtrl
+EmpresaCtrl -> EmpresaSvc: getEmpresaById(1L)
+EmpresaSvc --> EmpresaCtrl: Optional<Empresa>
+EmpresaCtrl --> Test: 200 OK + Detalles
+deactivate EmpresaCtrl
 
-:Test: testDeleteUser _Existe;
-if (Usuario existe?) then (sí)
-    :Eliminar usuario;
-    :Devolver 200;
-else (no)
-    :Devolver 404;
-endif
+Test -> EmpresaCtrl: GET /api/empresas/99 [Inexistente]
+activate EmpresaCtrl
+EmpresaCtrl -> EmpresaSvc: getEmpresaById(99L)
+EmpresaSvc --> EmpresaCtrl: Optional.empty()
+EmpresaCtrl --> Test: 404 Not Found
+deactivate EmpresaCtrl
 
-:Test: testDeleteUser _NoExiste;
-:Devolver 404;
+== RF-03: Crear Empresa ==
 
-:Test: testDeleteUser _NoAutorizado;
-if (Usuario autorizado?) then (sí)
-    :Eliminar usuario;
-    :Devolver 200;
-else (no)
-    :Lanzar AccessDeniedException;
-endif
+Test -> Security: mockAuthentication(USER/ADMIN)
+activate Security
+Security --> Test: Contexto actualizado
+deactivate Security
 
-stop
+Test -> EmpresaCtrl: POST /api/empresas [Autenticado]
+activate EmpresaCtrl
+EmpresaCtrl -> EmpresaSvc: saveEmpresa()
+EmpresaSvc --> EmpresaCtrl: Empresa creada
+EmpresaCtrl --> Test: 200 OK + ID
+deactivate EmpresaCtrl
+
+Test -> EmpresaCtrl: POST /api/empresas [No Autenticado]
+activate EmpresaCtrl
+EmpresaCtrl -> Security: Verificar autenticación
+Security --> EmpresaCtrl: Acceso denegado
+EmpresaCtrl --> Test: 403 Forbidden
+deactivate EmpresaCtrl
+
+== RF-04: Actualizar Empresa ==
+
+Test -> EmpresaCtrl: PUT /api/empresas/1 [ADMIN]
+activate EmpresaCtrl
+EmpresaCtrl -> EmpresaSvc: getEmpresaById(1L)
+EmpresaSvc --> EmpresaCtrl: Empresa existente
+EmpresaCtrl -> EmpresaSvc: saveEmpresa()
+EmpresaSvc --> EmpresaCtrl: Empresa actualizada
+EmpresaCtrl --> Test: 200 OK
+deactivate EmpresaCtrl
+
+Test -> EmpresaCtrl: PUT /api/empresas/1 [USER]
+activate EmpresaCtrl
+EmpresaCtrl -> Security: Verificar rol
+Security --> EmpresaCtrl: Rol no autorizado
+EmpresaCtrl --> Test: 403 Forbidden
+deactivate EmpresaCtrl
+
+== RF-05: Eliminar Empresa ==
+
+Test -> EmpresaCtrl: DELETE /api/empresas/1 [ADMIN]
+activate EmpresaCtrl
+EmpresaCtrl -> EmpresaSvc: deleteEmpresaById(1L)
+EmpresaSvc --> EmpresaCtrl: Operación exitosa
+EmpresaCtrl --> Test: 200 OK
+deactivate EmpresaCtrl
+
+Test -> EmpresaCtrl: DELETE /api/empresas/1 [USER]
+activate EmpresaCtrl
+EmpresaCtrl -> Security: Verificar rol
+Security --> EmpresaCtrl: Rol no autorizado
+EmpresaCtrl --> Test: 403 Forbidden
+deactivate EmpresaCtrl
+
 @enduml

@@ -1,0 +1,69 @@
+sequenceDiagram
+    participant Client
+    participant MockMvc
+    participant PreguntaController
+    participant SecurityContext
+    participant PreguntaService
+    participant CandidaturaService
+    participant UserService
+    participant JwtUtil
+
+    Note over Client,JwtUtil: Configuración inicial (setUp)
+    Client->>+SecurityContext: mockAuthentication(user/admin)
+    SecurityContext-->>-Client: contexto de seguridad establecido
+
+    Note over Client,JwtUtil: GET /api/preguntas/candidatura/{id}
+    Client->>+MockMvc: perform(GET /api/preguntas/candidatura/1)
+    MockMvc->>+SecurityContext: verificar autenticación
+    SecurityContext-->>-MockMvc: usuario autenticado
+    MockMvc->>+PreguntaController: getPreguntasByCandidatura(1L)
+    PreguntaController->>+PreguntaService: getPreguntasByCandidaturaId(1L)
+    PreguntaService-->>-PreguntaController: List<Pregunta>
+    PreguntaController-->>-MockMvc: ResponseEntity<List<Pregunta>>
+    MockMvc-->>-Client: HTTP 200 OK + JSON
+
+    Note over Client,JwtUtil: POST /api/preguntas
+    Client->>+MockMvc: perform(POST /api/preguntas)
+    MockMvc->>+SecurityContext: verificar autenticación
+    SecurityContext-->>-MockMvc: usuario autenticado (USER/ADMIN)
+    MockMvc->>+PreguntaController: createPregunta(PreguntaDTO)
+    PreguntaController->>+PreguntaService: savePregunta(Pregunta)
+    PreguntaService-->>-PreguntaController: Pregunta guardada
+    PreguntaController-->>-MockMvc: ResponseEntity<Pregunta>
+    MockMvc-->>-Client: HTTP 200 OK + JSON
+
+    Note over Client,JwtUtil: PUT /api/preguntas/{id}
+    Client->>+MockMvc: perform(PUT /api/preguntas/1)
+    MockMvc->>+SecurityContext: verificar autenticación
+    SecurityContext-->>-MockMvc: usuario autenticado
+    MockMvc->>+PreguntaController: updatePregunta(1L, PreguntaDTO)
+    PreguntaController->>+PreguntaService: getPreguntaById(1L)
+    PreguntaService-->>-PreguntaController: Optional<Pregunta>
+    
+    alt Usuario es propietario o ADMIN
+        PreguntaController->>+PreguntaService: savePregunta(Pregunta)
+        PreguntaService-->>-PreguntaController: Pregunta actualizada
+        PreguntaController-->>MockMvc: ResponseEntity<Pregunta>
+        MockMvc-->>Client: HTTP 200 OK + JSON
+    else Usuario sin permisos
+        PreguntaController-->>MockMvc: ResponseEntity (error)
+        MockMvc-->>Client: HTTP 403 Forbidden
+    end
+
+    Note over Client,JwtUtil: DELETE /api/preguntas/{id}
+    Client->>+MockMvc: perform(DELETE /api/preguntas/1)
+    MockMvc->>+SecurityContext: verificar autenticación
+    SecurityContext-->>-MockMvc: usuario autenticado
+    MockMvc->>+PreguntaController: deletePregunta(1L)
+    PreguntaController->>+PreguntaService: getPreguntaById(1L)
+    PreguntaService-->>-PreguntaController: Optional<Pregunta>
+    
+    alt Usuario es propietario o ADMIN
+        PreguntaController->>+PreguntaService: deletePregunta(1L)
+        PreguntaService-->>-PreguntaController: void
+        PreguntaController-->>MockMvc: ResponseEntity<Void>
+        MockMvc-->>Client: HTTP 200 OK
+    else Usuario sin permisos
+        PreguntaController-->>MockMvc: ResponseEntity (error)
+        MockMvc-->>Client: HTTP 403 Forbidden
+    end

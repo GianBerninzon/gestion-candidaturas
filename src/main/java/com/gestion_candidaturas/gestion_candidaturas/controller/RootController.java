@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/root")
 public class RootController {
@@ -18,7 +20,7 @@ public class RootController {
 
     @DeleteMapping("/users/{id}")
     @PreAuthorize("hasRole('ROOT')")
-    public ResponseEntity<String> deleteUser(@PathVariable Long id){
+    public ResponseEntity<String> deleteUser(@PathVariable UUID id){
         if(userService.getUserById(id).isEmpty()){
             return ResponseEntity.notFound().build();
         }
