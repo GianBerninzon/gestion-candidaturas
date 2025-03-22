@@ -1,6 +1,8 @@
 package com.gestion_candidaturas.gestion_candidaturas.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -19,7 +21,8 @@ public class Reclutador {
      * Identificador único del reclutador.
      */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue
+    @UuidGenerator
     private UUID id;
 
     /**
@@ -28,6 +31,7 @@ public class Reclutador {
      */
     @ManyToOne
     @JoinColumn(name = "empresa_id", nullable = false)
+    @JsonBackReference("empresa-reclutadores")
     private Empresa empresa;
 
     /**
@@ -47,6 +51,7 @@ public class Reclutador {
      * @see RF-05: Relacionar reclutadores con candidaturas.
      */
     @ManyToMany(mappedBy = "reclutadores")
+    @JsonBackReference("candidatura-reclutadores")
     private Set<Candidatura> candidaturas = new HashSet<>();
 
     public Reclutador() {

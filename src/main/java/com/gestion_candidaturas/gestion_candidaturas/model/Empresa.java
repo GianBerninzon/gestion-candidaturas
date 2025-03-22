@@ -1,8 +1,10 @@
 package com.gestion_candidaturas.gestion_candidaturas.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,7 +27,8 @@ public class Empresa {
      * Identificador único de la empresa.
      */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue
+    @UuidGenerator
     private UUID id;
 
     /**
@@ -44,7 +47,6 @@ public class Empresa {
      * Teléfono principal de la empresa.
      * @see RF-09: Permitir agregar teléfono principal de la empresa.
      */
-    @ElementCollection
     private String telefono;
 
     /**
@@ -65,12 +67,14 @@ public class Empresa {
      * Relación con reclutadores asociados a la empresa.
      */
     @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("empresa-reclutadores")
     private Set<Reclutador> reclutadores = new HashSet<>();
 
     /**
      * Relación con candidaturas asociadas a la empresa.
      */
     @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("empresa-candidaturas")
     private Set<Candidatura> candidaturas = new HashSet<>();
 
     public Empresa() {

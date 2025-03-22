@@ -2,9 +2,11 @@ package com.gestion_candidaturas.gestion_candidaturas.controller;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gestion_candidaturas.gestion_candidaturas.dto.CandidaturaDTO;
 import com.gestion_candidaturas.gestion_candidaturas.model.*;
 import com.gestion_candidaturas.gestion_candidaturas.security.JwtUtil;
 import com.gestion_candidaturas.gestion_candidaturas.service.CandidaturaService;
+import com.gestion_candidaturas.gestion_candidaturas.service.EmpresaService;
 import com.gestion_candidaturas.gestion_candidaturas.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,11 +19,12 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.*;
 
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Pruebas para el controlador de candidaturas.
@@ -44,7 +47,11 @@ public class CandidaturaControllerTest {
     private UserService userService;
 
     @MockitoBean
+    private EmpresaService empresaService;
+
+    @MockitoBean
     private JwtUtil jwtUtil;
+
 
     /**
      * Verifica que un usuario pueda obtener sus propias candidaturas.
@@ -165,16 +172,19 @@ public class CandidaturaControllerTest {
         // Datos de prueba
         User currentUser = new User(UUID.randomUUID(), "testuser", "password", "test@example.com", Role.USER);
 
+        UUID empresaId = UUID.randomUUID();
         Empresa empresa = new Empresa();
-        empresa.setId(UUID.randomUUID());
+        empresa.setId(empresaId);
         empresa.setNombre("Empresa Test");
 
-        Candidatura candidatura = new Candidatura();
-        candidatura.setEmpresa(empresa);
-        candidatura.setCargo("Desarrollador Java");
-        candidatura.setEstado(EstadoCandidatura.PENDIENTE);
-        candidatura.setFecha(new Date());
+        // Crear DTO para enviar en la solicitud
+        CandidaturaDTO candidaturaDTO = new CandidaturaDTO();
+        candidaturaDTO.setEmpresaId(empresaId);
+        candidaturaDTO.setCargo("Desarrollador Java");
+        candidaturaDTO.setEstado(EstadoCandidatura.PENDIENTE);
+        candidaturaDTO.setFecha(new Date());
 
+        // Crear objeto Candidatura para la respuesta esperada
         Candidatura candidaturaGuardada = new Candidatura();
         candidaturaGuardada.setId(UUID.randomUUID());
         candidaturaGuardada.setUser(currentUser);
@@ -185,12 +195,13 @@ public class CandidaturaControllerTest {
 
         // Configurar comportamiento del mock
         when(userService.getCurrentUser()).thenReturn(currentUser);
+        when(empresaService.findById(empresaId)).thenReturn(Optional.of(empresa));
         when(candidaturaService.save(any(Candidatura.class))).thenReturn(candidaturaGuardada);
 
         // Ejecutar solicitud y verificar resultado
         mockMvc.perform(post("/api/candidaturas")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(candidatura)))
+                        .content(objectMapper.writeValueAsString(candidaturaDTO)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.cargo").value("Desarrollador Java"))
                 .andExpect(jsonPath("$.estado").value("PENDIENTE"));

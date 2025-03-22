@@ -3,7 +3,6 @@ package com.gestion_candidaturas.gestion_candidaturas.service;
 import com.gestion_candidaturas.gestion_candidaturas.model.Role;
 import com.gestion_candidaturas.gestion_candidaturas.model.User;
 import com.gestion_candidaturas.gestion_candidaturas.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -25,11 +24,13 @@ import java.util.UUID;
 @Service
 public class UserService implements UserDetailsService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder){
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     /**
      * Carga los detalles de un usuario por su nombre de usuario.

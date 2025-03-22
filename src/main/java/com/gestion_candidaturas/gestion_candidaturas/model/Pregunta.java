@@ -1,6 +1,7 @@
 package com.gestion_candidaturas.gestion_candidaturas.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.util.UUID;
 
@@ -19,7 +20,8 @@ public class Pregunta {
      * Identificador único de la pregunta.
      */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue
+    @UuidGenerator
     private UUID id;
 
     /**

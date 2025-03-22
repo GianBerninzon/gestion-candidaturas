@@ -1,7 +1,10 @@
 package com.gestion_candidaturas.gestion_candidaturas.controller;
 
+import com.gestion_candidaturas.gestion_candidaturas.dto.PreguntaDTO;
+import com.gestion_candidaturas.gestion_candidaturas.model.Candidatura;
 import com.gestion_candidaturas.gestion_candidaturas.model.Pregunta;
 import com.gestion_candidaturas.gestion_candidaturas.model.User;
+import com.gestion_candidaturas.gestion_candidaturas.service.CandidaturaService;
 import com.gestion_candidaturas.gestion_candidaturas.service.PreguntaService;
 import com.gestion_candidaturas.gestion_candidaturas.service.UserService;
 import jakarta.validation.Valid;
@@ -26,6 +29,7 @@ public class PreguntaController {
 
     private final PreguntaService preguntaService;
     private final UserService userService;
+    private final CandidaturaService candidaturaService;
 
     /**
      * Constructor para inyección de dependencias.
@@ -33,9 +37,11 @@ public class PreguntaController {
      * @param preguntaService Servicio para operaciones con preguntas
      * @param userService Servicio para operaciones con usuarios
      */
-    public PreguntaController(PreguntaService preguntaService, UserService userService){
+    public PreguntaController(PreguntaService preguntaService, UserService userService,
+                              CandidaturaService candidaturaService){
         this.preguntaService = preguntaService;
         this.userService = userService;
+        this.candidaturaService = candidaturaService;
     }
 
     /**
@@ -73,16 +79,28 @@ public class PreguntaController {
     /**
      * Crea una nueva pregunta asociada a una candidatura y al usuario actual.
      *
-     * @param pregunta Datos de la pregunta a crear
+     * @param preguntaDTO Datos de la pregunta a crear
      * @return La pregunta creada
      *
      * @see RF-06: Registro de preguntas de entrevista
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
-    public ResponseEntity<Pregunta> createPregunta(@Valid @RequestBody Pregunta pregunta) {
-        // Asignar el usuario actual como propietario
-        pregunta.setUsuario(userService.getCurrentUser());
+    public ResponseEntity<Pregunta> createPregunta(@Valid @RequestBody PreguntaDTO preguntaDTO) {
+        // Obtener el usuario actual
+        User currentUser = userService.getCurrentUser();
+
+        // Buscar la candidatura por ID
+        Optional<Candidatura> candidaturaOpt = candidaturaService.findById(preguntaDTO.getCandidaturaId());
+        if (candidaturaOpt.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        // Crear la nueva pregunta
+        Pregunta pregunta = new Pregunta();
+        pregunta.setUsuario(currentUser);
+        pregunta.setCandidatura(candidaturaOpt.get());
+        pregunta.setPregunta(preguntaDTO.getPregunta());
 
         // Guardar la pregunta
         Pregunta nuevaPregunta = preguntaService.save(pregunta);
@@ -95,7 +113,7 @@ public class PreguntaController {
      * Los administradores pueden actualizar cualquier pregunta.
      *
      * @param id ID de la pregunta a actualizar
-     * @param pregunta Datos actualizados
+     * @param preguntaDTO Datos actualizados
      * @return La pregunta actualizada, 404 si no existe, 403 si no tiene permisos
      *
      * @see RF-06: Modificación de preguntas de entrevista
@@ -104,7 +122,7 @@ public class PreguntaController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
     public ResponseEntity<Pregunta> updatePregunta(@PathVariable UUID id,
-                                                   @Valid @RequestBody Pregunta pregunta) {
+                                                   @Valid @RequestBody PreguntaDTO preguntaDTO) {
         // Buscar la pregunta existente
         Optional<Pregunta> preguntaExistente = preguntaService.findById(id);
 
@@ -118,6 +136,17 @@ public class PreguntaController {
         // Verificar permisos de modificación
         if (preguntaExistente.get().getUsuario().getId().equals(currentUser.getId()) ||
                 currentUser.hasRole("ADMIN") || currentUser.hasRole("ROOT")) {
+
+            // Buscar la candidatura por ID
+            Optional<Candidatura> candidaturaOpt = candidaturaService.findById(preguntaDTO.getCandidaturaId());
+            if (candidaturaOpt.isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            // Actualizar la pregunta
+            Pregunta pregunta = preguntaExistente.get();
+            pregunta.setPregunta(preguntaDTO.getPregunta());
+            pregunta.setCandidatura(candidaturaOpt.get());
 
             // Preservar la información que no debería cambiar
             pregunta.setId(id);

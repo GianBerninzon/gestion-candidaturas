@@ -1,0 +1,389 @@
+{
+	"info": {
+		"_postman_id": "d5ca1543-09d9-4b50-90d5-d870f4036eb7",
+		"name": "Preguntas API Tests",
+		"description": "StartFragmentPara endpoints de preguntasEndFragment",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "15721088"
+	},
+	"item": [
+		{
+			"name": "Create Pregunta",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function() {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});\r",
+							"pm.test(\"Pregunta created correctly\", function() {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.property('id');\r",
+							"    pm.expect(jsonData.pregunta).to.eql(\"¿Cuál es tu experiencia con Spring Boot?\");\r",
+							"    \r",
+							"    // Guardar ID para otras peticiones\r",
+							"    pm.environment.set(\"pregunta_id\", jsonData.id);\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"candidaturaId\": \"{{candidatura_id}}\",\r\n  \"pregunta\": \"¿Cuál es tu experiencia con Spring Boot?\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/preguntas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"preguntas"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Pregunta Delete",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function() {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});\r",
+							"pm.test(\"Pregunta created correctly\", function() {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.property('id');\r",
+							"    pm.expect(jsonData.pregunta).to.eql(\"¿Cuál es tu experiencia con Spring Boot?\");\r",
+							"    \r",
+							"    // Guardar ID para otras peticiones\r",
+							"    pm.environment.set(\"pregunta_id_delete\", jsonData.id);\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"candidaturaId\": \"{{candidatura_id}}\",\r\n  \"pregunta\": \"¿Cuál es tu experiencia con Spring Boot?\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/preguntas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"preguntas"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Another Pregunta",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function() {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});\r",
+							"pm.test(\"Second pregunta created correctly\", function() {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.property('id');\r",
+							"    pm.expect(jsonData.pregunta).to.eql(\"¿Has trabajado con microservicios?\");\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"candidaturaId\": \"{{candidatura_id}}\",\r\n  \"pregunta\": \"¿Has trabajado con microservicios?\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/preguntas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"preguntas"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Preguntas By Candidatura",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function() {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"pm.test(\"Response is an array of preguntas\", function() {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.be.an('array');\r",
+							"    pm.expect(jsonData.length).to.be.greaterThan(0);\r",
+							"    // Verificar que todas las preguntas pertenecen a la candidatura\r",
+							"    jsonData.forEach(function(pregunta) {\r",
+							"        pm.expect(pregunta.candidatura.id).to.eql(pm.environment.get(\"candidatura_id\"));\r",
+							"    });\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/preguntas?candidaturaId={{candidatura_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"preguntas"
+					],
+					"query": [
+						{
+							"key": "candidaturaId",
+							"value": "{{candidatura_id}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Count of Preguntas",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function() {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"pm.test(\"Response is a number greater than 0\", function() {\r",
+							"    var count = parseInt(pm.response.text());\r",
+							"    pm.expect(count).to.be.a('number');\r",
+							"    pm.expect(count).to.be.greaterThan(0);\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/preguntas/count?candidaturaId={{candidatura_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"preguntas",
+						"count"
+					],
+					"query": [
+						{
+							"key": "candidaturaId",
+							"value": "{{candidatura_id}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Pregunta",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function() {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"pm.test(\"Pregunta updated correctly\", function() {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.id).to.eql(pm.environment.get(\"pregunta_id\"));\r",
+							"    pm.expect(jsonData.pregunta).to.eql(\"¿Cuántos años de experiencia tienes con Spring Boot?\");\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"candidaturaId\": \"{{candidatura_id}}\",\r\n  \"pregunta\": \"¿Cuántos años de experiencia tienes con Spring Boot?\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/preguntas/{{pregunta_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"preguntas",
+						"{{pregunta_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": " Delete Pregunta",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 204\", function() {\r",
+							"    pm.response.to.have.status(204);\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/preguntas/{{pregunta_id_delete}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"preguntas",
+						"{{pregunta_id_delete}}"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

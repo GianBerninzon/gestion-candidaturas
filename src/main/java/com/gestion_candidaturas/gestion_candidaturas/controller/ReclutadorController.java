@@ -1,7 +1,11 @@
 package com.gestion_candidaturas.gestion_candidaturas.controller;
 
 
+import com.gestion_candidaturas.gestion_candidaturas.dto.ReclutadorDTO;
+import com.gestion_candidaturas.gestion_candidaturas.model.Empresa;
 import com.gestion_candidaturas.gestion_candidaturas.model.Reclutador;
+import com.gestion_candidaturas.gestion_candidaturas.service.CandidaturaService;
+import com.gestion_candidaturas.gestion_candidaturas.service.EmpresaService;
 import com.gestion_candidaturas.gestion_candidaturas.service.ReclutadorService;
 import com.gestion_candidaturas.gestion_candidaturas.service.UserService;
 import jakarta.validation.Valid;
@@ -10,9 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Controlador REST para operaciones relacionadas con reclutadores.
@@ -26,15 +28,20 @@ public class ReclutadorController {
 
     private final ReclutadorService reclutadorService;
     private final UserService userService;
+    private final EmpresaService empresaService;
+    private final CandidaturaService candidaturaService;
 
     /**
      * Constructor para inyección de dependencias.
      *
      * @param reclutadorService Servicio para operaciones con reclutadores
      */
-    public ReclutadorController(ReclutadorService reclutadorService, UserService userService){
+    public ReclutadorController(ReclutadorService reclutadorService, UserService userService,
+                                EmpresaService empresaService, CandidaturaService candidaturaService){
         this.reclutadorService = reclutadorService;
         this.userService = userService;
+        this.candidaturaService = candidaturaService;
+        this.empresaService = empresaService;
     }
 
     /**
@@ -76,22 +83,47 @@ public class ReclutadorController {
      */
     @GetMapping("/empresa/{empresaId}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
-    public ResponseEntity<List<Reclutador>> getReclutadoresByEmpresa(@PathVariable UUID empresaId) {
+    public ResponseEntity<List<Map<String, Object>>> getReclutadoresByEmpresa(@PathVariable UUID empresaId) {
         List<Reclutador> reclutadores = reclutadorService.findByEmpresaId(empresaId);
-        return ResponseEntity.ok(reclutadores);
+
+        // Convertir los reclutadores DTOs que incluyan el ID de la empresa
+        List<Map<String, Object>> dtos = reclutadores.stream()
+                .map(reclutador -> {
+                    Map<String, Object> dto = new HashMap<>();
+                    dto.put("id", reclutador.getId());
+                    dto.put("nombre", reclutador.getNombre());
+                    dto.put("linkinUrl", reclutador.getLinkinUrl());
+                    dto.put("empresaId", empresaId);
+                    return dto;
+                })
+                .toList();
+
+        return ResponseEntity.ok(dtos);
     }
 
     /**
      * Crea un nuevo reclutador.
      *
-     * @param reclutador Datos del reclutador a crear
+     * @param reclutadorDTO Datos del reclutador a crear
      * @return El reclutador creado
      *
      * @see RF-04: Registro de reclutadores
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'ROOT')")
-    public ResponseEntity<Reclutador> createReclutador(@Valid @RequestBody Reclutador reclutador) {
+    public ResponseEntity<Reclutador> createReclutador(@Valid @RequestBody ReclutadorDTO reclutadorDTO) {
+        // Buscar la empresa por ID
+        Optional<Empresa> empresaOpt = empresaService.findById(reclutadorDTO.getEmpresaId());
+        if (empresaOpt.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        // Crear nuevo reclutador
+        Reclutador reclutador = new Reclutador();
+        reclutador.setEmpresa(empresaOpt.get());
+        reclutador.setNombre(reclutadorDTO.getNombre());
+        reclutador.setLinkinUrl(reclutadorDTO.getLinkinUrl());
+
         Reclutador nuevoReclutador = reclutadorService.save(reclutador);
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevoReclutador);
     }
@@ -101,22 +133,34 @@ public class ReclutadorController {
      * Este endpoint permite a usuarios normales crear reclutadores, pero solo en el contexto de gestionar candidaturas.
      * Implementa una lógica de "buscar primero, crear si no existe" para evitar duplicados.
      *
-     * @param reclutador Datos del reclutador a crear o buscar
+     * @param reclutadorDTO Datos del reclutador a crear o buscar
      * @return El reclutador existente o el nuevo reclutador creado
      *
      * @see RF-04: Permitir a usuarios crear reclutadores durante la gestión de candidaturas
      */
     @PostMapping("/crear-con-candidatura")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Reclutador> createReclutadorForCandidatura(@Valid @RequestBody Reclutador reclutador){
+    public ResponseEntity<Reclutador> createReclutadorForCandidatura(@Valid @RequestBody ReclutadorDTO reclutadorDTO){
+        // Buscar la empresa por ID
+        Optional<Empresa> empresaOpt = empresaService.findById(reclutadorDTO.getEmpresaId());
+        if (empresaOpt.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
         // Verificar si ya existe un reclutador con el mismo nombre en la misma empresa
         Optional<Reclutador> existingReclutador =reclutadorService.findByNombreAndEmpresaId(
-                reclutador.getNombre(), reclutador.getEmpresa().getId());
+                reclutadorDTO.getNombre(), reclutadorDTO.getEmpresaId());
 
-        if(existingReclutador.isEmpty()){
+        if(existingReclutador.isPresent()){
             // Si el reclutador ya existe, lo retornamos para ser usado en la candidatura
             return ResponseEntity.ok(existingReclutador.get());
         }
+
+        // Crear nuevo reclutador
+        Reclutador reclutador = new Reclutador();
+        reclutador.setEmpresa(empresaOpt.get());
+        reclutador.setNombre(reclutadorDTO.getNombre());
+        reclutador.setLinkinUrl(reclutadorDTO.getLinkinUrl());
 
         // Si no existe, creamos el nuevo reclutador
         Reclutador nuevoReclutador = reclutadorService.save(reclutador);
@@ -129,7 +173,7 @@ public class ReclutadorController {
      * creado y que estén asociados a sus propias candidaturas.
      *
      * @param id ID del reclutador a actualizar
-     * @param reclutador Datos actualizados
+     * @param reclutadorDTO Datos actualizados
      * @return El reclutador actualizado, 404 si no existe, 403 si no tiene permisos
      *
      * @see RF-04: Permitir a usuarios actualizar reclutadores asociados a sus candidaturas
@@ -137,7 +181,7 @@ public class ReclutadorController {
     @PutMapping("/{id}/user-update")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Reclutador> updateReclutadorByUser(@PathVariable UUID id,
-                                                             @Valid @RequestBody Reclutador reclutador){
+                                                             @Valid @RequestBody ReclutadorDTO reclutadorDTO){
         // Verificar si el reclutador existe
         Optional<Reclutador> existingReclutador = reclutadorService.findById(id);
         if(existingReclutador.isEmpty()){
@@ -145,15 +189,19 @@ public class ReclutadorController {
         }
 
         //Verificar si el usuario tiene permiso para actualizar este reclutador
-        // (si está asociado a alaguna de sus candidaturas)
+        // (si está asociado a alguna de sus candidaturas)
         if(!reclutadorService.isReclutadorAssociatedWithUserCandidaturas(id,
                 userService.getCurrentUser().getId())){
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
+        // La empresa no cambia, pero actualizamos otros campos
+        Reclutador reclutador = existingReclutador.get();
+        reclutador.setNombre(reclutadorDTO.getNombre());
+        reclutador.setLinkinUrl(reclutadorDTO.getLinkinUrl());
+
         // Mantener el ID y la empresa original
         reclutador.setId(id);
-        reclutador.setEmpresa(existingReclutador.get().getEmpresa());
 
         //  Guardar los cambios
         Reclutador reclutadorActualizado = reclutadorService.save(reclutador);
@@ -164,7 +212,7 @@ public class ReclutadorController {
      * Actualiza un reclutador existente.
      *
      * @param id ID del reclutador a actualizar
-     * @param reclutador Datos actualizados
+     * @param reclutadorDTO Datos actualizados
      * @return El reclutador actualizado, 404 si no existe
      *
      * @see RF-04: Actualización de información de reclutadores
@@ -172,11 +220,26 @@ public class ReclutadorController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'ROOT')")
     public ResponseEntity<Reclutador> updateReclutador(@PathVariable UUID id,
-                                                       @Valid @RequestBody Reclutador reclutador) {
+                                                       @Valid @RequestBody ReclutadorDTO reclutadorDTO) {
+        // Verificar si el reclutador existe
         if (reclutadorService.findById(id).isEmpty()) {
             return ResponseEntity.notFound().build();
         }
+
+        // Buscar la empresa por ID
+        Optional<Empresa> empresaOpt = empresaService.findById(reclutadorDTO.getEmpresaId());
+        if (empresaOpt.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        // Crear el reclutador actualizado
+        Reclutador reclutador = new Reclutador();
         reclutador.setId(id);
+        reclutador.setEmpresa(empresaOpt.get());
+        reclutador.setNombre(reclutadorDTO.getNombre());
+        reclutador.setLinkinUrl(reclutadorDTO.getLinkinUrl());
+
+        // Guardar los cambios
         Reclutador reclutadorActualizado = reclutadorService.save(reclutador);
         return ResponseEntity.ok(reclutadorActualizado);
     }

@@ -1,0 +1,476 @@
+{
+	"info": {
+		"_postman_id": "c719833a-e62f-4a2b-91c2-adeeff73cb20",
+		"name": "Candidaturas API Tests",
+		"description": "StartFragmentPara endpoints de candidaturasEndFragment",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "15721088"
+	},
+	"item": [
+		{
+			"name": "Create Candidatura",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function() {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});\r",
+							"pm.test(\"Response contains candidatura info\", function() {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.property('id');\r",
+							"    pm.expect(jsonData.cargo).to.eql(\"Desarrollador Java\");\r",
+							"    pm.expect(jsonData.estado).to.eql(\"PENDIENTE\");\r",
+							"    \r",
+							"    // Guardar ID para otras peticiones\r",
+							"    pm.environment.set(\"candidatura_id\", jsonData.id);\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"empresaId\": \"{{empresa_id}}\",\r\n  \"cargo\": \"Desarrollador Java\",\r\n  \"fecha\": \"2023-12-01\",\r\n  \"estado\": \"PENDIENTE\",\r\n  \"notas\": \"Candidatura de prueba\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/candidaturas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"candidaturas"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Candidatura Delete",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function() {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});\r",
+							"pm.test(\"Response contains candidatura info\", function() {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.property('id');\r",
+							"    pm.expect(jsonData.cargo).to.eql(\"Desarrollador Java\");\r",
+							"    pm.expect(jsonData.estado).to.eql(\"PENDIENTE\");\r",
+							"    \r",
+							"    // Guardar ID para otras peticiones\r",
+							"    pm.environment.set(\"candidatura_id_delete\", jsonData.id);\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"empresaId\": \"{{empresa_id}}\",\r\n  \"cargo\": \"Desarrollador Java\",\r\n  \"fecha\": \"2023-12-01\",\r\n  \"estado\": \"PENDIENTE\",\r\n  \"notas\": \"Candidatura de prueba Delete\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/candidaturas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"candidaturas"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Candidaturas (User)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function() {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"pm.test(\"Response is an array of user's candidaturas\", function() {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.be.an('array');\r",
+							"    // Verificar que al menos hay una candidatura\r",
+							"    pm.expect(jsonData.length).to.be.greaterThan(0);\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": " Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/candidaturas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"candidaturas"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get All Candidaturas (Admin)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function() {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"pm.test(\"Admin can see all candidaturas\", function() {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.be.an('array');\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/candidaturas/all",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"candidaturas",
+						"all"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Candidatura By ID",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function() {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"pm.test(\"Response contains correct candidatura\", function() {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.id).to.eql(pm.environment.get(\"candidatura_id\"));\r",
+							"    pm.expect(jsonData.cargo).to.eql(\"Desarrollador Java\");\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/candidaturas/{{candidatura_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"candidaturas",
+						"{{candidatura_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Candidatura",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function() {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"pm.test(\"Response contains updated candidatura\", function() {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.cargo).to.eql(\"Senior Java Developer\");\r",
+							"    pm.expect(jsonData.notas).to.eql(\"Candidatura actualizada\");\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"empresaId\": \"{{empresa_id}}\",\r\n  \"cargo\": \"Senior Java Developer\",\r\n  \"fecha\": \"2023-12-01\",\r\n  \"estado\": \"PENDIENTE\",\r\n  \"notas\": \"Candidatura actualizada\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/candidaturas/{{candidatura_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"candidaturas",
+						"{{candidatura_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Candidatura Estado",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function() {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"pm.test(\"Estado updated to ENTREVISTA\", function() {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.estado).to.eql(\"ENTREVISTA\");\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/candidaturas/{{candidatura_id}}/estado?estado=ENTREVISTA",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"candidaturas",
+						"{{candidatura_id}}",
+						"estado"
+					],
+					"query": [
+						{
+							"key": "estado",
+							"value": "ENTREVISTA"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Search Candidaturas With Filters",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function() {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"pm.test(\"All returned candidaturas have ENTREVISTA estado\", function() {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.be.an('array');\r",
+							"    // Verificar que todas las candidaturas tienen estado ENTREVISTA\r",
+							"    jsonData.forEach(function(candidatura) {\r",
+							"        pm.expect(candidatura.estado).to.eql(\"ENTREVISTA\");\r",
+							"    });\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/candidaturas/buscar?estado=ENTREVISTA",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"candidaturas",
+						"buscar"
+					],
+					"query": [
+						{
+							"key": "estado",
+							"value": "ENTREVISTA"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Candidatura (Admin)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 204\", function() {\r",
+							"    pm.response.to.have.status(204);\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/candidaturas/{{candidatura_id_delete}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"candidaturas",
+						"{{candidatura_id_delete}}"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

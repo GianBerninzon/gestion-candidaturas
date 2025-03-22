@@ -38,6 +38,6 @@ public interface PreguntaRepository extends JpaRepository<Pregunta, UUID> {
      * @param usuarioId ID del usuario que podría ser propietario
      * @return true si el usuario es propietario de la pregunta, false en caso contrario
      */
-    @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Preguntap Where p.id = :preguntaId AND p.usuario.id = :usuarioId")
+    @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Pregunta p Where p.id = :preguntaId AND p.usuario.id = :usuarioId")
     boolean isPreguntaOwner(@Param("preguntaId") UUID preguntaId, @Param("usuarioId") UUID usuarioId);
 }

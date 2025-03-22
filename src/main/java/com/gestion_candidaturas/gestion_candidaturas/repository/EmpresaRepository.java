@@ -40,7 +40,7 @@ public interface EmpresaRepository extends JpaRepository<Empresa, UUID> {
      * @param empresaId ID de la empresa
      * @return Lista de arrays de objetos donde cada array contiene [id_usuario, username, contador_candidaturas]
      */
-    @Query("SELECT u.id, u.username, COUNT(c) FROM User u JOIN Candidatura c ON u.id = c.user.id" +
+    @Query("SELECT u.id, u.username, COUNT(c) FROM User u JOIN Candidatura c ON u.id = c.user.id " +
             "WHERE c.empresa.id = :empresaId GROUP BY u.id, u.username")
     List<Object[]> findUsersByEmpresaId(@Param("empresaId") UUID empresaId);
 }

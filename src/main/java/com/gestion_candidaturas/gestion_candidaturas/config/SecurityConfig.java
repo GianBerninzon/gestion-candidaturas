@@ -11,7 +11,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -35,18 +34,17 @@ import java.util.Arrays;
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-    private final UserService userService;
+   // private final UserService userService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Constructor para inyección de dependencias.
-     *
-     * @param userService Servicio de gestión de usuarios
      * @param jwtAuthenticationFilter Filtro de autenticación JWT
      */
-    public SecurityConfig(UserService userService, JwtAuthenticationFilter jwtAuthenticationFilter){
-        this.userService = userService;
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, PasswordEncoder passwordEncoder){
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -98,21 +96,20 @@ public class SecurityConfig {
 
     /**
      * Configura el proveedor de autenticación.
-     *
+     * @param userService Servicio de usuarios inyectado como parámetro para evitar dependencia circular
      * @return Proveedor de autenticación configurado con el servicio de usuarios y el codificador de contraseñas
      */
     @Bean
-    public DaoAuthenticationProvider authenticationProvider(){
+    public DaoAuthenticationProvider authenticationProvider(UserService userService){
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userService);
-        authProvider.setPasswordEncoder(passwordEncoder());
+        authProvider.setPasswordEncoder(passwordEncoder);
         return authProvider;
     }
 
     /**
      * Proporciona un gestor de autenticación para ser utilizado en el controlador de autenticación.
      *
-     * @param config Configuración de autenticación
      * @return Gestor de autenticación
      * @throws Exception Si ocurre un error al obtener el gestor de autenticación
      */
@@ -121,14 +118,14 @@ public class SecurityConfig {
         return authConfig.getAuthenticationManager();
     }
 
-    /**
-     * Proporciona un codificador de contraseñas para la aplicación.
-     * Utiliza BCrypt para una encriptación segura.
-     *
-     * @return Codificador de contraseñas
-     */
-    @Bean
-    public PasswordEncoder passwordEncoder(){
-        return new BCryptPasswordEncoder();
-    }
+//    /**
+//     * Proporciona un codificador de contraseñas para la aplicación.
+//     * Utiliza BCrypt para una encriptación segura.
+//     *
+//     * @return Codificador de contraseñas
+//     */
+//    @Bean
+//    public PasswordEncoder passwordEncoder(){
+//        return new BCryptPasswordEncoder();
+//    }
 }

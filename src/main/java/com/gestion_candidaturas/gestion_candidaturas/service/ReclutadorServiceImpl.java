@@ -58,6 +58,7 @@ public class ReclutadorServiceImpl implements ReclutadorService{
         // Verificamos si el reclutador existe
         Optional<Reclutador> reclutadorOpt = reclutadorRepository.findById(reclutadorId);
         if(reclutadorOpt.isEmpty()){
+            System.out.println("El reclutador con ID " + reclutadorId + " no existe");
             return false;
         }
 

@@ -1,9 +1,12 @@
 package com.gestion_candidaturas.gestion_candidaturas.controller;
 
+import com.gestion_candidaturas.gestion_candidaturas.dto.CandidaturaDTO;
 import com.gestion_candidaturas.gestion_candidaturas.model.Candidatura;
+import com.gestion_candidaturas.gestion_candidaturas.model.Empresa;
 import com.gestion_candidaturas.gestion_candidaturas.model.EstadoCandidatura;
 import com.gestion_candidaturas.gestion_candidaturas.model.User;
 import com.gestion_candidaturas.gestion_candidaturas.service.CandidaturaService;
+import com.gestion_candidaturas.gestion_candidaturas.service.EmpresaService;
 import com.gestion_candidaturas.gestion_candidaturas.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -31,6 +34,7 @@ public class CandidaturaController {
 
     private final CandidaturaService candidaturaService;
     private final UserService userService;
+    private final EmpresaService empresaService;
 
     /**
      * Constructor para inyección de dependencias.
@@ -38,9 +42,11 @@ public class CandidaturaController {
      * @param candidaturaService Servicio para operaciones con candidaturas
      * @param userService Servicio para operaciones con usuarios
      */
-    public CandidaturaController(CandidaturaService candidaturaService, UserService userService) {
+    public CandidaturaController(CandidaturaService candidaturaService, UserService userService
+    , EmpresaService empresaService) {
         this.candidaturaService = candidaturaService;
         this.userService = userService;
+        this.empresaService = empresaService;
     }
 
     /**
@@ -119,9 +125,24 @@ public class CandidaturaController {
      */
     @PostMapping
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Candidatura> createCandidatura(@Valid @RequestBody Candidatura candidatura) {
-        // Asignar el usuario actual como propietario
-        candidatura.setUser(userService.getCurrentUser());
+    public ResponseEntity<Candidatura> createCandidatura(@Valid @RequestBody CandidaturaDTO candidaturaDTO) {
+        // Obtener el usuario actual
+        User currentUser = userService.getCurrentUser();
+
+        // Buscar la empresa por ID
+        Optional<Empresa> empresaOpt = empresaService.findById(candidaturaDTO.getEmpresaId());
+        if(empresaOpt.isEmpty()){
+            return ResponseEntity.badRequest().build();
+        }
+
+        // Crear la nueva candidatura
+        Candidatura candidatura = new Candidatura();
+        candidatura.setUser(currentUser);
+        candidatura.setEmpresa(empresaOpt.get());
+        candidatura.setCargo(candidaturaDTO.getCargo());
+        candidatura.setFecha(candidaturaDTO.getFecha());
+        candidatura.setEstado(candidaturaDTO.getEstado());
+        candidatura.setNotas(candidaturaDTO.getNotas());
 
         // Guardar la candidatura
         Candidatura nuevaCandidatura = candidaturaService.save(candidatura);
@@ -143,7 +164,7 @@ public class CandidaturaController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
     public ResponseEntity<Candidatura> updateCandidatura(@PathVariable UUID id,
-                                                         @Valid @RequestBody Candidatura candidatura) {
+                                                         @Valid @RequestBody CandidaturaDTO candidaturaDTO) {
         // Buscar la candidatura existente
         Optional<Candidatura> candidaturaExistente = candidaturaService.findById(id);
 
@@ -158,9 +179,19 @@ public class CandidaturaController {
         if (candidaturaExistente.get().getUser().getId().equals(currentUser.getId()) ||
                 currentUser.hasRole("ADMIN") || currentUser.hasRole("ROOT")) {
 
-            // Preservar la información que no debería cambiar
-            candidatura.setId(id);
-            candidatura.setUser(candidaturaExistente.get().getUser());
+            // Buscar la empresa por ID
+            Optional<Empresa> empresaOpt = empresaService.findById(candidaturaDTO.getEmpresaId());
+            if(empresaOpt.isEmpty()){
+                return ResponseEntity.badRequest().build();
+            }
+
+            // Actualizar la candidatura existente con los datos del DTO
+            Candidatura candidatura = candidaturaExistente.get();
+            candidatura.setEmpresa(empresaOpt.get());
+            candidatura.setCargo(candidaturaDTO.getCargo());
+            candidatura.setFecha(candidaturaDTO.getFecha());
+            candidatura.setEstado(candidaturaDTO.getEstado());
+            candidatura.setNotas(candidaturaDTO.getNotas());
 
             // Guardar cambios
             Candidatura candidaturaActualizada = candidaturaService.save(candidatura);

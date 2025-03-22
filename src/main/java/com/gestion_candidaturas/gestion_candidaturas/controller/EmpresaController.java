@@ -1,5 +1,6 @@
 package com.gestion_candidaturas.gestion_candidaturas.controller;
 
+import com.gestion_candidaturas.gestion_candidaturas.dto.EmpresaDTO;
 import com.gestion_candidaturas.gestion_candidaturas.dto.EmpresaWithUsersDTO;
 import com.gestion_candidaturas.gestion_candidaturas.model.Empresa;
 import com.gestion_candidaturas.gestion_candidaturas.service.EmpresaService;
@@ -90,14 +91,21 @@ public class EmpresaController {
     /**
      * Crea una nueva empresa (solo administradores).
      *
-     * @param empresa Datos de la empresa a crear
+     * @param empresaDTO Datos de la empresa a crear
      * @return La empresa creada
      *
      * @see RF-08: Creación de empresas por administradores
      */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Empresa> createEmpresa(@Valid @RequestBody Empresa empresa) {
+    public ResponseEntity<Empresa> createEmpresa(@Valid @RequestBody EmpresaDTO empresaDTO) {
+        // Crear una nueva empresa a partir del DTO
+        Empresa empresa = new Empresa();
+        empresa.setNombre(empresaDTO.getNombre());
+        empresa.setCorreo(empresaDTO.getCorreo());
+        empresa.setTelefono(empresaDTO.getTelefono());
+
+        // Guardar la empresa
         Empresa nuevaEmpresa = empresaService.save(empresa);
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevaEmpresa);
     }
@@ -108,7 +116,7 @@ public class EmpresaController {
      * una candidatura. Implementa una lógica de "buscar primero, crear si no existe" para evitar
      * duplicados en el sistema.
      *
-     * @param empresa Datos de la empresa a crear o buscar
+     * @param empresaDTO Datos de la empresa a crear o buscar
      * @return La empresa existente o la nueva empresa creada
      *
      * @see RF-08: Permitir a usuarios crear empresas durante el registro de candidaturas
@@ -116,15 +124,21 @@ public class EmpresaController {
      */
     @PostMapping("/crear-con-candidatura")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Empresa> createEmpresaForCandidatura(@Valid @RequestBody Empresa empresa) {
+    public ResponseEntity<Empresa> createEmpresaForCandidatura(@Valid @RequestBody EmpresaDTO empresaDTO) {
         // Verificar si ya existe la empresa por nombre para evitar duplicados
-        Optional<Empresa> existingEmpresa = empresaService.findByNombre(empresa.getNombre());
+        Optional<Empresa> existingEmpresa = empresaService.findByNombre(empresaDTO.getNombre());
         if (existingEmpresa.isPresent()) {
             // Si la empresa ya existe, la retornamos para ser usada en la candidatura
             return ResponseEntity.ok(existingEmpresa.get());
         }
 
-        // Si no existe, creamos la nueva empresa
+        // Crear una nueva empresa a partir del DTO
+        Empresa empresa = new Empresa();
+        empresa.setNombre(empresaDTO.getNombre());
+        empresa.setCorreo(empresaDTO.getCorreo());
+        empresa.setTelefono(empresaDTO.getTelefono());
+
+        // Guardar la empresa
         Empresa nuevaEmpresa = empresaService.save(empresa);
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevaEmpresa);
     }
@@ -135,7 +149,7 @@ public class EmpresaController {
      * Los administradores pueden actualizar cualquier empresa.
      *
      * @param id ID de la empresa a actualizar
-     * @param empresa Datos actualizados
+     * @param empresaDTO Datos actualizados
      * @return La empresa actualizada, 404 si no existe
      *
      * @see RF-08: Actualización de información de empresas
@@ -143,16 +157,23 @@ public class EmpresaController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
     public ResponseEntity<Empresa> updateEmpresa(@PathVariable UUID id,
-                                                 @Valid @RequestBody Empresa empresa) {
+                                                 @Valid @RequestBody EmpresaDTO empresaDTO) {
         // Verificar si la empresa existe
-        if (empresaService.findById(id).isEmpty()) {
+        Optional<Empresa> empresaExistente = empresaService.findById(id);
+        if (empresaExistente.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
+
+        // Actualizar la empresa con los datos del DTO
+        Empresa empresa = empresaExistente.get();
+        empresa.setNombre(empresaDTO.getNombre());
+        empresa.setCorreo(empresaDTO.getCorreo());
+        empresa.setTelefono(empresaDTO.getTelefono());
 
         // Establecer el ID para asegurar que se actualiza la empresa correcta
         empresa.setId(id);
 
-        // La lógica de permisos se maneja en el servicio o mediante configuración de seguridad
+        // Guardar los cambios
         Empresa empresaActualizada = empresaService.save(empresa);
         return ResponseEntity.ok(empresaActualizada);
     }

@@ -42,19 +42,28 @@ public interface CandidaturaRepository extends JpaRepository<Candidatura, UUID> 
      * @param userId ID del usuario propietario (obligatorio por seguridad)
      * @return Lista de candidaturas que cumplen todos los criterios especificados
      */
+    //    @Query("SELECT c FROM Candidatura c WHERE " +
+//            "(:estado IS NULL OR c.estado = :estado) AND " +
+//            "(:empresaNombre IS NULL OR LOWER(c.empresa.nombre) LIKE LOWER(CONCAT('%', :empresaNombre, '%'))) AND " +
+//            "(:fechaDesde IS NULL OR c.fecha >= :fechaDesde) AND " +
+//            "(:fechaHasta IS NULL OR c.fecha <= :fechaHasta) AND " +
+//            "(:q IS NULL OR LOWER(c.cargo) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(c.notas) LIKE LOWER(CONCAT('%', :q, '%'))) AND " +
+//            "c.user.id = :userId " +
+//            "ORDER BY c.fecha DESC")
     @Query("SELECT c FROM Candidatura c WHERE " +
             // Si estado es null, esta condición se ignora; si no, filtra por ese estado exacto
             "(:estado IS NULL OR c.estado = :estado) AND " +
             // Si empresaNombre es null, esta condición se ignora; si no, busca coincidencias parciales
-            "(:empresa IS NULL OR LOWER(c.empresa.nombre) LIKE LOWER (CONCAT('%', :empresaNombre, '%'))) AND" +
+            "(:empresaNombre IS NULL OR LOWER(c.empresa.nombre) LIKE LOWER(CONCAT('%', :empresaNombre, '%'))) AND " +
             // Si fechaDesde es null, esta condición se ignora; si no, filtra candidaturas posteriores a esa fecha
             "(:fechaDesde IS NULL OR c.fecha >= :fechaDesde) AND " +
             // Si fechaHasta es null, esta condición se ignora; si no, filtra candidaturas anteriores a esa fecha
-            "(:fechaHasta IS NULL OR c.fecha >= fechaHasta) AND " +
+            "(:fechaHasta IS NULL OR c.fecha <= :fechaHasta) AND " +
             // Si q es null, esta condición se ignora; si no, busca en cargo o notas
-            "(:q IS NULL OR LOWER(c.cargo) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(c.notas) LIKE LOWER('%', :q, '%'))) AND" +
+            "(:q IS NULL OR LOWER(c.cargo) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(c.notas) LIKE LOWER(CONCAT('%', :q, '%'))) AND " +
             // Siempre filtra por el usuario propietario para mantener seguridad
-            "c.user.id = :userId")
+            "c.user.id = :userId " +
+            "ORDER BY c.fecha DESC")
     List<Candidatura> buscarCandidaturas(
             @Param("estado")EstadoCandidatura estado,
             @Param("empresaNombre") String espresaNombre,
