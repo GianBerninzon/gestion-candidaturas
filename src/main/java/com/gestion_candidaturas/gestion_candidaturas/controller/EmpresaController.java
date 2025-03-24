@@ -2,10 +2,14 @@ package com.gestion_candidaturas.gestion_candidaturas.controller;
 
 import com.gestion_candidaturas.gestion_candidaturas.dto.EmpresaDTO;
 import com.gestion_candidaturas.gestion_candidaturas.dto.EmpresaWithUsersDTO;
+import com.gestion_candidaturas.gestion_candidaturas.dto.PageResponseDTO;
 import com.gestion_candidaturas.gestion_candidaturas.model.Empresa;
 import com.gestion_candidaturas.gestion_candidaturas.service.EmpresaService;
+import com.gestion_candidaturas.gestion_candidaturas.util.PaginacionUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -46,12 +50,38 @@ public class EmpresaController {
      *
      * @see RF-08: Gestión de empresas
      */
+//    @GetMapping
+//    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
+//    public ResponseEntity<List<Empresa>> getAllEmpresas() {
+//        // Se obtienen todas las empresas - La lógica de filtrado por rol se maneja en el servicio
+//        List<Empresa> empresas = empresaService.findAll();
+//        return ResponseEntity.ok(empresas);
+//    }
+
+    /**
+     * Obtiene todas las empresas según el rol del usuario con soporte para paginación.
+     * Los usuarios normales ven las empresas de sus candidaturas, los administradores ven todas.
+     *
+     * @param page Número de página (0-indexed)
+     * @param size Tamaño de la página
+     * @param sort Campos y direcciones de ordenamiento
+     * @return ResponseEntity con la página de empresas
+     *
+     * @see RF-08: Gestión de empresas con paginación
+     */
     @GetMapping
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
-    public ResponseEntity<List<Empresa>> getAllEmpresas() {
-        // Se obtienen todas las empresas - La lógica de filtrado por rol se maneja en el servicio
-        List<Empresa> empresas = empresaService.findAll();
-        return ResponseEntity.ok(empresas);
+    public ResponseEntity<PageResponseDTO<Empresa>> getAllEmpresas(
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10")int size,
+            @RequestParam(defaultValue = "nombre, asc") String[] sort){
+        // Crear objeto Pageable con la informacion de paginacion y ordenamiento
+        Pageable pageable = PaginacionUtil.crearPageable(page, size, sort);
+
+        // Se obtienen todas las empresa paginadas - La logica de filtrado por rol se maneja en el servicio
+        Page<Empresa> empresas = empresaService.findAll(pageable);
+
+        return ResponseEntity.ok(new PageResponseDTO<>(empresas));
     }
 
     /**
@@ -194,18 +224,44 @@ public class EmpresaController {
                 ResponseEntity.notFound().build();
     }
 
+//    /**
+//     * Busca empresas que contengan el texto especificado en su nombre.
+//     *
+//     * @param nombre Texto a buscar en el nombre de la empresa
+//     * @return Lista de empresas coincidentes
+//     *
+//     * @see RF-08: Búsqueda de empresas
+//     */
+//    @GetMapping("/buscar")
+//    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
+//    public ResponseEntity<List<Empresa>> buscarPorNombre(@RequestParam String nombre) {
+//        List<Empresa> empresas = empresaService.findByNombreContaining(nombre);
+//        return ResponseEntity.ok(empresas);
+//    }
     /**
-     * Busca empresas que contengan el texto especificado en su nombre.
+     * Busca empresas que contengan el texto especificado en su nombre con soporte para paginación.
      *
      * @param nombre Texto a buscar en el nombre de la empresa
-     * @return Lista de empresas coincidentes
+     * @param page Número de página (0-indexed)
+     * @param size Tamaño de la página
+     * @param sort Campos y direcciones de ordenamiento
+     * @return ResponseEntity con la página de empresas coincidentes
      *
-     * @see RF-08: Búsqueda de empresas
+     * @see RF-08: Búsqueda de empresas con paginación
      */
     @GetMapping("/buscar")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
-    public ResponseEntity<List<Empresa>> buscarPorNombre(@RequestParam String nombre) {
-        List<Empresa> empresas = empresaService.findByNombreContaining(nombre);
-        return ResponseEntity.ok(empresas);
+    public ResponseEntity<PageResponseDTO<Empresa>> buscarPorNombre(
+            @RequestParam String nombre,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "nombre,asc") String[] sort){
+        // Crear objeto Paheable
+        Pageable pageable = PaginacionUtil.crearPageable(page, size, sort);
+
+        //Buscar empresas que coincidan con el nombre
+        Page<Empresa> empresas = empresaService.findByNombreContaining(nombre, pageable);
+
+        return ResponseEntity.ok(new PageResponseDTO<>(empresas));
     }
 }

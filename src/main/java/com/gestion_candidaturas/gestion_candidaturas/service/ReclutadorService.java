@@ -1,8 +1,9 @@
 package com.gestion_candidaturas.gestion_candidaturas.service;
 
 import com.gestion_candidaturas.gestion_candidaturas.model.Reclutador;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,7 +16,9 @@ public interface ReclutadorService {
      *
      * @return Lista de todos los reclutadores.
      */
-    List<Reclutador> findAll();
+    //List<Reclutador> findAll();
+    //Metodo Paginacion
+    Page<Reclutador> findAll(Pageable pageable);
 
     /**
      * Busca un reclutador por su identificador único.
@@ -31,7 +34,9 @@ public interface ReclutadorService {
      * @param empresaId ID de la empresa.
      * @return Lista de reclutadores asociados a la empresa.
      */
-    List<Reclutador> findByEmpresaId(UUID empresaId);
+    //List<Reclutador> findByEmpresaId(UUID empresaId);
+    //Metodo paginacion
+    Page<Reclutador> findByEmpresaId(UUID empresaId, Pageable pageable);
 
     /**
      * Busca un reclutador por su nombre y empresa.

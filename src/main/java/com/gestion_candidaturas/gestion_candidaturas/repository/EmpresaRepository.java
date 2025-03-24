@@ -1,6 +1,8 @@
 package com.gestion_candidaturas.gestion_candidaturas.repository;
 
 import com.gestion_candidaturas.gestion_candidaturas.model.Empresa;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,7 +14,9 @@ import java.util.UUID;
 public interface EmpresaRepository extends JpaRepository<Empresa, UUID> {
 
     // Método personalizado para buscar empresas por nombre (parcial, ignorando mayúsculas/minúsculas)
-    List<Empresa> findByNombreContainingIgnoreCase(String nombre);
+    //List<Empresa> findByNombreContainingIgnoreCase(String nombre);
+    // Metodo Paginacion
+    Page<Empresa> findByNombreContainingIgnoreCase(String nombre, Pageable pageable);
 
     // Verificar si existe una empresa con ese nombre exacto
     boolean existsByNombreIgnoreCase(String nombre);
@@ -43,4 +47,6 @@ public interface EmpresaRepository extends JpaRepository<Empresa, UUID> {
     @Query("SELECT u.id, u.username, COUNT(c) FROM User u JOIN Candidatura c ON u.id = c.user.id " +
             "WHERE c.empresa.id = :empresaId GROUP BY u.id, u.username")
     List<Object[]> findUsersByEmpresaId(@Param("empresaId") UUID empresaId);
+
+
 }

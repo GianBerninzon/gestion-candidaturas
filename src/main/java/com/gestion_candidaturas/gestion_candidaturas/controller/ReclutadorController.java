@@ -1,6 +1,7 @@
 package com.gestion_candidaturas.gestion_candidaturas.controller;
 
 
+import com.gestion_candidaturas.gestion_candidaturas.dto.PageResponseDTO;
 import com.gestion_candidaturas.gestion_candidaturas.dto.ReclutadorDTO;
 import com.gestion_candidaturas.gestion_candidaturas.model.Empresa;
 import com.gestion_candidaturas.gestion_candidaturas.model.Reclutador;
@@ -8,7 +9,10 @@ import com.gestion_candidaturas.gestion_candidaturas.service.CandidaturaService;
 import com.gestion_candidaturas.gestion_candidaturas.service.EmpresaService;
 import com.gestion_candidaturas.gestion_candidaturas.service.ReclutadorService;
 import com.gestion_candidaturas.gestion_candidaturas.service.UserService;
+import com.gestion_candidaturas.gestion_candidaturas.util.PaginacionUtil;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,6 +39,9 @@ public class ReclutadorController {
      * Constructor para inyección de dependencias.
      *
      * @param reclutadorService Servicio para operaciones con reclutadores
+     * @param userService Servicio para operaciones con usuarios
+     * @param empresaService Servicio para operaciones con empresas
+     * @param candidaturaService Servicio para operaciones con candidaturas
      */
     public ReclutadorController(ReclutadorService reclutadorService, UserService userService,
                                 EmpresaService empresaService, CandidaturaService candidaturaService){
@@ -51,10 +58,35 @@ public class ReclutadorController {
      *
      * @see RF-04: Consulta de reclutadores
      */
+//    @GetMapping
+//    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
+//    public ResponseEntity<List<Reclutador>> getAllReclutadores(){
+//        return ResponseEntity.ok(reclutadorService.findAll());
+//    }
+
+    /**
+     * Obtiene todos los reclutadores del sistema con soporte para paginación.
+     *
+     * @param page Número de página (0-indexed)
+     * @param size Tamaño de la página
+     * @param sort Campos y direcciones de ordenamiento
+     * @return ResponseEntity con la página de reclutadores
+     *
+     * @see RF-04: Consulta de reclutadores con paginación
+     */
     @GetMapping
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
-    public ResponseEntity<List<Reclutador>> getAllReclutadores(){
-        return ResponseEntity.ok(reclutadorService.findAll());
+    public ResponseEntity<PageResponseDTO<Reclutador>> getAllReclutadores(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "nombre,asc") String[] sort){
+        //Crear objeto pageable con la informacion de paginacion y ordenamiento
+        Pageable pageable = PaginacionUtil.crearPageable(page, size, sort);
+
+        //Obtener reclutadores paginados
+        Page<Reclutador> reclutadores = reclutadorService.findAll(pageable);
+
+        return ResponseEntity.ok(new PageResponseDTO<>(reclutadores));
     }
 
     /**
@@ -81,24 +113,62 @@ public class ReclutadorController {
      *
      * @see RF-04: Filtrado de reclutadores por empresa
      */
+//    @GetMapping("/empresa/{empresaId}")
+//    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
+//    public ResponseEntity<List<Map<String, Object>>> getReclutadoresByEmpresa(@PathVariable UUID empresaId) {
+//        List<Reclutador> reclutadores = reclutadorService.findByEmpresaId(empresaId);
+//
+//        // Convertir los reclutadores DTOs que incluyan el ID de la empresa
+//        List<Map<String, Object>> dtos = reclutadores.stream()
+//                .map(reclutador -> {
+//                    Map<String, Object> dto = new HashMap<>();
+//                    dto.put("id", reclutador.getId());
+//                    dto.put("nombre", reclutador.getNombre());
+//                    dto.put("linkinUrl", reclutador.getLinkinUrl());
+//                    dto.put("empresaId", empresaId);
+//                    return dto;
+//                })
+//                .toList();
+//
+//        return ResponseEntity.ok(dtos);
+//    }
+
+    /**
+     * Obtiene todos los reclutadores asociados a una empresa específica con soporte para paginación.
+     *
+     * @param empresaId ID de la empresa
+     * @param page Número de página (0-indexed)
+     * @param size Tamaño de la página
+     * @param sort Campos y direcciones de ordenamiento
+     * @return ResponseEntity con la página de reclutadores de la empresa
+     *
+     * @see RF-04: Filtrado de reclutadores por empresa con paginación
+     */
     @GetMapping("/empresa/{empresaId}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
-    public ResponseEntity<List<Map<String, Object>>> getReclutadoresByEmpresa(@PathVariable UUID empresaId) {
-        List<Reclutador> reclutadores = reclutadorService.findByEmpresaId(empresaId);
+    public ResponseEntity<PageResponseDTO<Map<String, Object>>> getReclutadoresByEmpresa(
+            @PathVariable UUID empresaId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "nombre, asc") String[] sort){
+        //Crear objeto pageable con la informacion de paginacion y ordenamiento
+        Pageable pageable = PaginacionUtil.crearPageable(page,size,sort);
 
-        // Convertir los reclutadores DTOs que incluyan el ID de la empresa
-        List<Map<String, Object>> dtos = reclutadores.stream()
-                .map(reclutador -> {
-                    Map<String, Object> dto = new HashMap<>();
-                    dto.put("id", reclutador.getId());
-                    dto.put("nombre", reclutador.getNombre());
-                    dto.put("linkinUrl", reclutador.getLinkinUrl());
-                    dto.put("empresaId", empresaId);
-                    return dto;
-                })
-                .toList();
+        //Obtener reclutadores paginados de la empresa
+        Page<Reclutador> reclutadores = reclutadorService.findByEmpresaId(empresaId, pageable);
 
-        return ResponseEntity.ok(dtos);
+        // COnvertir a Page de DTOs
+        Page<Map<String, Object>> reclutadoresDTO = reclutadores.map(reclutador -> {
+            Map<String, Object> dto = Map.of(
+                    "id", reclutador.getId(),
+                    "nombre", reclutador.getNombre(),
+                    "linkinUrl", reclutador.getLinkinUrl(),
+                    "empresaId", empresaId
+            );
+            return dto;
+        });
+
+        return ResponseEntity.ok(new PageResponseDTO<>(reclutadoresDTO));
     }
 
     /**

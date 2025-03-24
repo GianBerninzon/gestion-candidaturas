@@ -1,11 +1,12 @@
 package com.gestion_candidaturas.gestion_candidaturas.repository;
 
 import com.gestion_candidaturas.gestion_candidaturas.model.Pregunta;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
 import java.util.UUID;
 
 public interface PreguntaRepository extends JpaRepository<Pregunta, UUID> {
@@ -17,7 +18,9 @@ public interface PreguntaRepository extends JpaRepository<Pregunta, UUID> {
      * @param candidaturaId ID de la candidatura a la que pertenecen las preguntas
      * @return Lista de preguntas asociadas a la candidatura especificada
      */
-    List<Pregunta> findByCandidaturaId(UUID candidaturaId);
+    //List<Pregunta> findByCandidaturaId(UUID candidaturaId);
+    // Soporte Paginacion
+    Page<Pregunta> findByCandidaturaId(UUID candidaturaId, Pageable pageable);
 
     /**
      * Cuenta el número total de preguntas asociadas a una candidatura.

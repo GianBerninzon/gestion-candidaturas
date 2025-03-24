@@ -1,5 +1,6 @@
 package com.gestion_candidaturas.gestion_candidaturas.controller;
 
+import com.gestion_candidaturas.gestion_candidaturas.dto.PageResponseDTO;
 import com.gestion_candidaturas.gestion_candidaturas.dto.PreguntaDTO;
 import com.gestion_candidaturas.gestion_candidaturas.model.Candidatura;
 import com.gestion_candidaturas.gestion_candidaturas.model.Pregunta;
@@ -7,13 +8,15 @@ import com.gestion_candidaturas.gestion_candidaturas.model.User;
 import com.gestion_candidaturas.gestion_candidaturas.service.CandidaturaService;
 import com.gestion_candidaturas.gestion_candidaturas.service.PreguntaService;
 import com.gestion_candidaturas.gestion_candidaturas.service.UserService;
+import com.gestion_candidaturas.gestion_candidaturas.util.PaginacionUtil;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -36,6 +39,7 @@ public class PreguntaController {
      *
      * @param preguntaService Servicio para operaciones con preguntas
      * @param userService Servicio para operaciones con usuarios
+     * @param candidaturaService Servicio para operaciones con candidaturas
      */
     public PreguntaController(PreguntaService preguntaService, UserService userService,
                               CandidaturaService candidaturaService){
@@ -52,12 +56,39 @@ public class PreguntaController {
      *
      * @see RF-06: Consulta de preguntas por candidatura
      */
+//    @GetMapping
+//    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
+//    public ResponseEntity<List<Pregunta>> getPreguntasByCandidatura(
+//            @RequestParam UUID candidaturaId) {
+//        List<Pregunta> preguntas = preguntaService.findByCandidaturaId(candidaturaId);
+//        return ResponseEntity.ok(preguntas);
+//    }
+
+    /**
+     * Obtiene todas las preguntas asociadas a una candidatura específica con soporte para paginación.
+     *
+     * @param candidaturaId ID de la candidatura
+     * @param page Número de página (0-indexed)
+     * @param size Tamaño de la página
+     * @param sort Campos y direcciones de ordenamiento
+     * @return ResponseEntity con la página de preguntas de la candidatura
+     *
+     * @see RF-06: Consulta de preguntas por candidatura con paginación
+     */
     @GetMapping
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
-    public ResponseEntity<List<Pregunta>> getPreguntasByCandidatura(
-            @RequestParam UUID candidaturaId) {
-        List<Pregunta> preguntas = preguntaService.findByCandidaturaId(candidaturaId);
-        return ResponseEntity.ok(preguntas);
+    public ResponseEntity<PageResponseDTO<Pregunta>> getPreguntasByCandidatura(
+            @RequestParam UUID candidaturaId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id,asc") String[] sort){
+        //Crear objeto Pageable con la informacion de paginacion y ordenamiento
+        Pageable pageable = PaginacionUtil.crearPageable(page, size, sort);
+
+        //Obtener preguntas paginadas
+        Page<Pregunta> preguntas = preguntaService.findByCandidaturaId(candidaturaId, pageable);
+
+        return ResponseEntity.ok(new PageResponseDTO<>(preguntas));
     }
 
     /**

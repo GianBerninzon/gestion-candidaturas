@@ -1,8 +1,9 @@
 package com.gestion_candidaturas.gestion_candidaturas.service;
 
 import com.gestion_candidaturas.gestion_candidaturas.model.Pregunta;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,7 +18,9 @@ public interface PreguntaService {
      * @param candidaturaId ID de la candidatura.
      * @return Lista de preguntas asociadas a la candidatura.
      */
-    List<Pregunta> findByCandidaturaId(UUID candidaturaId);
+    //List<Pregunta> findByCandidaturaId(UUID candidaturaId);
+    // Metodo Paginacion
+    Page<Pregunta> findByCandidaturaId(UUID candidaturaId, Pageable pageable);
 
     /**
      * Busca una pregunta por su identificador único.

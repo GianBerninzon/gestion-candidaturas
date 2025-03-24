@@ -1,6 +1,7 @@
 package com.gestion_candidaturas.gestion_candidaturas.controller;
 
 import com.gestion_candidaturas.gestion_candidaturas.dto.CandidaturaDTO;
+import com.gestion_candidaturas.gestion_candidaturas.dto.PageResponseDTO;
 import com.gestion_candidaturas.gestion_candidaturas.model.Candidatura;
 import com.gestion_candidaturas.gestion_candidaturas.model.Empresa;
 import com.gestion_candidaturas.gestion_candidaturas.model.EstadoCandidatura;
@@ -8,17 +9,17 @@ import com.gestion_candidaturas.gestion_candidaturas.model.User;
 import com.gestion_candidaturas.gestion_candidaturas.service.CandidaturaService;
 import com.gestion_candidaturas.gestion_candidaturas.service.EmpresaService;
 import com.gestion_candidaturas.gestion_candidaturas.service.UserService;
+import com.gestion_candidaturas.gestion_candidaturas.util.PaginacionUtil;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Controlador REST para operaciones relacionadas con candidaturas.
@@ -56,15 +57,43 @@ public class CandidaturaController {
      *
      * @see RF-03: Visualización de candidaturas
      */
+//    @GetMapping
+//    @PreAuthorize("hasRole('USER')")
+//    public ResponseEntity<List<Candidatura>> getCandidaturas() {
+//        // Obtener el usuario actual
+//        User currentUser = userService.getCurrentUser();
+//
+//        // Obtener candidaturas del usuario
+//        List<Candidatura> candidaturas = candidaturaService.findByUserId(currentUser.getId());
+//        return ResponseEntity.ok(candidaturas);
+//    }
+    /**
+     * Obtiene las candidaturas del usuario autenticado con soporte para paginación y ordenamiento.
+     *
+     * @param page Número de página (0-indexed)
+     * @param size Tamaño de la página
+     * @param sort Campos y direcciones de ordenamiento
+     * @return ResponseEntity con la página de candidaturas
+     *
+     * @see RF-03: Visualización de candidaturas con paginación
+     */
     @GetMapping
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<List<Candidatura>> getCandidaturas() {
+    public ResponseEntity<PageResponseDTO<Candidatura>> getCandidaturas(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "fecha_desc") String[] sort){
         // Obtener el usuario actual
         User currentUser = userService.getCurrentUser();
 
-        // Obtener candidaturas del usuario
-        List<Candidatura> candidaturas = candidaturaService.findByUserId(currentUser.getId());
-        return ResponseEntity.ok(candidaturas);
+        // Crear objeto Pageable con la información de paginación y ordenamiento
+        Pageable pageable = PaginacionUtil.crearPageable(page, size, sort);
+
+        // Obtener candidaturas paginadas del usuario
+        Page<Candidatura> candidaturas = candidaturaService.findByUserId(currentUser.getId(), pageable);
+
+        //convertir a DTO de respuesta paginada
+        return ResponseEntity.ok(new PageResponseDTO<>(candidaturas));
     }
 
     /**
@@ -75,11 +104,22 @@ public class CandidaturaController {
      * @see RF-03: Visualización de candidaturas (administradores)
      * @see RF-11: Control de acceso basado en roles
      */
+//    @GetMapping("/all")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'ROOT')")
+//    public ResponseEntity<List<Candidatura>> getAllCandidaturas() {
+//        List<Candidatura> candidaturas = candidaturaService.findAll();
+//        return ResponseEntity.ok(candidaturas);
+//    }
+    // Con paginacion
     @GetMapping("/all")
     @PreAuthorize("hasAnyRole('ADMIN', 'ROOT')")
-    public ResponseEntity<List<Candidatura>> getAllCandidaturas() {
-        List<Candidatura> candidaturas = candidaturaService.findAll();
-        return ResponseEntity.ok(candidaturas);
+    public ResponseEntity<PageResponseDTO<Candidatura>> getAllCandidaturas(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "fecha_desc") String[] sort) {
+        Pageable pageable = PaginacionUtil.crearPageable(page, size, sort);
+        Page<Candidatura> candidaturas = candidaturaService.findAll(pageable);
+        return ResponseEntity.ok(new PageResponseDTO<>(candidaturas));
     }
 
     /**
@@ -118,7 +158,7 @@ public class CandidaturaController {
     /**
      * Crea una nueva candidatura asociada al usuario autenticado.
      *
-     * @param candidatura Datos de la candidatura a crear
+     * @param candidaturaDTO Datos de la candidatura a crear
      * @return La candidatura creada
      *
      * @see RF-01: Registro de candidaturas
@@ -155,7 +195,7 @@ public class CandidaturaController {
      * Los administradores pueden actualizar cualquier candidatura.
      *
      * @param id ID de la candidatura a actualizar
-     * @param candidatura Datos actualizados
+     * @param candidaturaDTO Datos actualizados
      * @return La candidatura actualizada, 404 si no existe, 403 si no tiene permisos
      *
      * @see RF-01: Actualización de información de candidaturas
@@ -268,22 +308,63 @@ public class CandidaturaController {
      *
      * @see RF-03: Búsqueda y filtrado de candidaturas
      */
+//    @GetMapping("/buscar")
+//    @PreAuthorize("hasRole('USER')")
+//    public ResponseEntity<List<Candidatura>> buscarCandidaturas(
+//            @RequestParam(required = false) EstadoCandidatura estado,
+//            @RequestParam(required = false) String empresa,
+//            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date fechaDesde,
+//            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date fechaHasta,
+//            @RequestParam(required = false) String q) {
+//
+//        // Obtener el usuario actual
+//        User currentUser = userService.getCurrentUser();
+//
+//        // Ejecutar búsqueda con filtros
+//        List<Candidatura> candidaturas = candidaturaService.buscar(
+//                estado, empresa, fechaDesde, fechaHasta, q, currentUser.getId());
+//
+//        return ResponseEntity.ok(candidaturas);
+//    }
+
+    /**
+     * Busca candidaturas aplicando múltiples filtros opcionales con soporte para paginación.
+     * Los usuarios normales solo ven sus propias candidaturas filtradas.
+     *
+     * @param estado Estado de la candidatura (opcional)
+     * @param empresa Nombre de la empresa (opcional)
+     * @param fechaDesde Fecha inicial para filtrar (opcional)
+     * @param fechaHasta Fecha final para filtrar (opcional)
+     * @param q Texto de búsqueda general en cargo o notas (opcional)
+     * @param page Número de página (0-indexed)
+     * @param size Tamaño de la página
+     * @param sort Campos y direcciones de ordenamiento
+     * @return Lista paginada de candidaturas que cumplen los criterios
+     *
+     * @see RF-03: Búsqueda y filtrado de candidaturas con paginación
+     */
     @GetMapping("/buscar")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<List<Candidatura>> buscarCandidaturas(
+    public ResponseEntity<PageResponseDTO<Candidatura>> buscarCandidaturas(
             @RequestParam(required = false) EstadoCandidatura estado,
             @RequestParam(required = false) String empresa,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date fechaDesde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date fechaHasta,
-            @RequestParam(required = false) String q) {
-
+            @RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "fecha_desc") String[] sort){
         // Obtener el usuario actual
         User currentUser = userService.getCurrentUser();
 
-        // Ejecutar búsqueda con filtros
-        List<Candidatura> candidaturas = candidaturaService.buscar(
-                estado, empresa, fechaDesde, fechaHasta, q, currentUser.getId());
+        // Crear objeto Pageable
+        Pageable pageable = PaginacionUtil.crearPageable(page, size, sort);
 
-        return ResponseEntity.ok(candidaturas);
+        // Ejecutar búsqueda con filtros
+        Page<Candidatura> candidaturas = candidaturaService.buscar(
+                estado, empresa, fechaDesde, fechaHasta, q, currentUser.getId(), pageable);
+
+        // Convertir a DTO de respuesta paginada
+        return ResponseEntity.ok(new PageResponseDTO<>(candidaturas));
     }
 }

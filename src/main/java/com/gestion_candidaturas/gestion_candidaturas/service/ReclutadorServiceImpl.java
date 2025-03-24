@@ -5,10 +5,11 @@ import com.gestion_candidaturas.gestion_candidaturas.model.Reclutador;
 import com.gestion_candidaturas.gestion_candidaturas.repository.CandidaturaRepository;
 import com.gestion_candidaturas.gestion_candidaturas.repository.ReclutadorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -18,6 +19,7 @@ import java.util.UUID;
  */
 @Service
 public class ReclutadorServiceImpl implements ReclutadorService{
+
 
     private final ReclutadorRepository reclutadorRepository;
 
@@ -32,9 +34,17 @@ public class ReclutadorServiceImpl implements ReclutadorService{
 
     @Override
     @Transactional(readOnly = true)
-    public List<Reclutador> findAll() {
-        return reclutadorRepository.findAll();
+    public Page<Reclutador> findAll(Pageable pageable) {
+        return reclutadorRepository.findAll(pageable);
     }
+
+
+
+//    @Override
+//    @Transactional(readOnly = true)
+//    public List<Reclutador> findAll() {
+//        return reclutadorRepository.findAll();
+//    }
 
     @Override
     @Transactional(readOnly = true)
@@ -42,10 +52,16 @@ public class ReclutadorServiceImpl implements ReclutadorService{
         return reclutadorRepository.findById(id);
     }
 
+//    @Override
+//    @Transactional(readOnly = true)
+//    public List<Reclutador> findByEmpresaId(UUID empresaId) {
+//        return reclutadorRepository.findByEmpresaId(empresaId);
+//    }
+
     @Override
     @Transactional(readOnly = true)
-    public List<Reclutador> findByEmpresaId(UUID empresaId) {
-        return reclutadorRepository.findByEmpresaId(empresaId);
+    public Page<Reclutador> findByEmpresaId(UUID empresaId, Pageable pageable) {
+        return reclutadorRepository.findByEmpresaId(empresaId, pageable);
     }
 
     @Override

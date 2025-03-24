@@ -2,12 +2,13 @@ package com.gestion_candidaturas.gestion_candidaturas.repository;
 
 import com.gestion_candidaturas.gestion_candidaturas.model.Candidatura;
 import com.gestion_candidaturas.gestion_candidaturas.model.EstadoCandidatura;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -23,7 +24,10 @@ public interface CandidaturaRepository extends JpaRepository<Candidatura, UUID> 
      * @param userId ID del usuario propietario de las candidaturas
      * @return Lista de candidaturas del usuario ordenadas por fecha descendente
      */
-    List<Candidatura> findByUserIdOrderByFechaDesc(UUID userId);
+    //List<Candidatura> findByUserIdOrderByFechaDesc(UUID userId);
+
+    // Soporte Paginacion
+    Page<Candidatura> findByUserIdOrderByFechaDesc(UUID userId, Pageable pageable);
 
     /**
      * Método avanzado que realiza una búsqueda de candidaturas con múltiples criterios opcionales.
@@ -64,13 +68,23 @@ public interface CandidaturaRepository extends JpaRepository<Candidatura, UUID> 
             // Siempre filtra por el usuario propietario para mantener seguridad
             "c.user.id = :userId " +
             "ORDER BY c.fecha DESC")
-    List<Candidatura> buscarCandidaturas(
+//    List<Candidatura> buscarCandidaturas(
+//            @Param("estado")EstadoCandidatura estado,
+//            @Param("empresaNombre") String espresaNombre,
+//            @Param("fechaDesde")Date fechaDesde,
+//            @Param("fechaHasta") Date fechaHasta,
+//            @Param("q") String q,
+//            @Param("userId") UUID userId
+//            );
+    Page<Candidatura> buscarCandidaturas(
             @Param("estado")EstadoCandidatura estado,
             @Param("empresaNombre") String espresaNombre,
             @Param("fechaDesde")Date fechaDesde,
             @Param("fechaHasta") Date fechaHasta,
             @Param("q") String q,
-            @Param("userId") UUID userId
+            @Param("userId") UUID userId,
+            Pageable pageable
             );
+
 
 }

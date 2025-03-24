@@ -5,6 +5,8 @@ import com.gestion_candidaturas.gestion_candidaturas.dto.UserResumenDTO;
 import com.gestion_candidaturas.gestion_candidaturas.model.Empresa;
 import com.gestion_candidaturas.gestion_candidaturas.repository.EmpresaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,12 +38,16 @@ public class EmpresaServiceImpl implements EmpresaService{
      * 3. No requiere bloques de escritura en la base de datos
      * 4. Optimiza recursos al indicarle a Hibernate que no necesita trackear cambios
      */
+//    @Override
+//    @Transactional(readOnly = true)
+//    public List<Empresa> findAll() {
+//        return empresaRepository.findAll();
+//    }
     @Override
     @Transactional(readOnly = true)
-    public List<Empresa> findAll() {
-        return empresaRepository.findAll();
+    public Page<Empresa> findAll(Pageable pageable) {
+        return empresaRepository.findAll(pageable);
     }
-
 
     /**
      * Busca una empresa por su ID.
@@ -92,10 +98,15 @@ public class EmpresaServiceImpl implements EmpresaService{
      * 1. Es una operación de consulta que no modifica datos
      * 2. Optimiza el rendimiento para consultas complejas
      */
+//    @Override
+//    @Transactional(readOnly = true)
+//    public List<Empresa> findByNombreContaining(String nombre) {
+//        return empresaRepository.findByNombreContainingIgnoreCase(nombre);
+//    }
     @Override
     @Transactional(readOnly = true)
-    public List<Empresa> findByNombreContaining(String nombre) {
-        return empresaRepository.findByNombreContainingIgnoreCase(nombre);
+    public Page<Empresa> findByNombreContaining(String nombre, Pageable pageable) {
+        return empresaRepository.findByNombreContainingIgnoreCase(nombre, pageable);
     }
 
     @Override

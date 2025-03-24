@@ -4,10 +4,11 @@ package com.gestion_candidaturas.gestion_candidaturas.service;
 import com.gestion_candidaturas.gestion_candidaturas.model.Pregunta;
 import com.gestion_candidaturas.gestion_candidaturas.repository.PreguntaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,10 +29,16 @@ public class PreguntaServiceImpl implements PreguntaService{
     }
 
 
+//    @Override
+//    @Transactional(readOnly = true)
+//    public List<Pregunta> findByCandidaturaId(UUID candidaturaId) {
+//        return preguntaRepository.findByCandidaturaId(candidaturaId);
+//    }
+
     @Override
     @Transactional(readOnly = true)
-    public List<Pregunta> findByCandidaturaId(UUID candidaturaId) {
-        return preguntaRepository.findByCandidaturaId(candidaturaId);
+    public Page<Pregunta> findByCandidaturaId(UUID candidaturaId, Pageable pageable) {
+        return preguntaRepository.findByCandidaturaId(candidaturaId, pageable);
     }
 
     @Override

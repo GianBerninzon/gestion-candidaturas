@@ -2,9 +2,10 @@ package com.gestion_candidaturas.gestion_candidaturas.service;
 
 import com.gestion_candidaturas.gestion_candidaturas.model.Candidatura;
 import com.gestion_candidaturas.gestion_candidaturas.model.EstadoCandidatura;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.Date;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,7 +20,9 @@ public interface CandidaturaService {
      *
      * @return Lista de todas las candidaturas.
      */
-    List<Candidatura> findAll();
+    //List<Candidatura> findAll();
+    // Metodo Paginacion
+    Page<Candidatura> findAll(Pageable pageable);
 
     /**
      * Recupera todas las candidaturas de un usuario específico.
@@ -27,7 +30,9 @@ public interface CandidaturaService {
      * @param userId ID del usuario propietario.
      * @return Lista de candidaturas del usuario.
      */
-    List<Candidatura> findByUserId(UUID userId);
+    //List<Candidatura> findByUserId(UUID userId);
+    // Metodo Paginacion
+    Page<Candidatura> findByUserId(UUID userId, Pageable pageable);
 
     /**
      * Busca una candidatura por su identificador único.
@@ -73,8 +78,12 @@ public interface CandidaturaService {
      * @param userId ID del usuario propietario.
      * @return Lista de candidaturas que cumplen los criterios.
      */
-    List<Candidatura> buscar(EstadoCandidatura estado, String empresaNombre,
-                             Date fechaDesde, Date fechaHasta, String q, UUID userId);
+    //List<Candidatura> buscar(EstadoCandidatura estado, String empresaNombre,
+    //                        Date fechaDesde, Date fechaHasta, String q, UUID userId);
+    //Metodo Paginacion
+    Page<Candidatura> buscar(
+            EstadoCandidatura estado, String empresaNombre,
+            Date fechaDesde, Date fechaHasta, String q, UUID userId, Pageable pageable);
 
     /**
      * Verifica si un usuario es propietario de una candidatura.

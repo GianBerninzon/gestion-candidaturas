@@ -4,11 +4,12 @@ import com.gestion_candidaturas.gestion_candidaturas.model.Candidatura;
 import com.gestion_candidaturas.gestion_candidaturas.model.EstadoCandidatura;
 import com.gestion_candidaturas.gestion_candidaturas.repository.CandidaturaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,16 +28,28 @@ public class CandidaturaServiceImpl implements CandidaturaService{
     }
 
 
+//    @Override
+//    @Transactional(readOnly = true)
+//    public List<Candidatura> findAll() {
+//        return candidaturaRepository.findAll();
+//    }
+
+//    @Override
+//    @Transactional(readOnly = true)
+//    public List<Candidatura> findByUserId(UUID userId) {
+//        return candidaturaRepository.findByUserIdOrderByFechaDesc(userId);
+//    }
+
     @Override
     @Transactional(readOnly = true)
-    public List<Candidatura> findAll() {
-        return candidaturaRepository.findAll();
+    public Page<Candidatura> findAll(Pageable pageable) {
+        return candidaturaRepository.findAll(pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Candidatura> findByUserId(UUID userId) {
-        return candidaturaRepository.findByUserIdOrderByFechaDesc(userId);
+    public Page<Candidatura> findByUserId(UUID userId, Pageable pageable) {
+        return candidaturaRepository.findByUserIdOrderByFechaDesc(userId, pageable);
     }
 
     @Override
@@ -74,15 +87,25 @@ public class CandidaturaServiceImpl implements CandidaturaService{
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Candidatura> buscar(EstadoCandidatura estado, String empresaNombre,
-                                    Date fechaDesde, Date fechaHasta, String q,
-                                    UUID userId) {
-            // Implementación de búsqueda con criterios
-            // Utilizamos un repositorio personalizado o especificación para la búsqueda
-            return candidaturaRepository.buscarCandidaturas(estado, empresaNombre,
-                    fechaDesde, fechaHasta, q, userId);
+    public Page<Candidatura> buscar(EstadoCandidatura estado,
+                                    String empresaNombre, Date fechaDesde,
+                                    Date fechaHasta, String q, UUID userId,
+                                    Pageable pageable) {
+        return candidaturaRepository.buscarCandidaturas(
+                estado, empresaNombre, fechaDesde, fechaHasta, q, userId, pageable
+        );
     }
+
+//    @Override
+//    @Transactional(readOnly = true)
+//    public List<Candidatura> buscar(EstadoCandidatura estado, String empresaNombre,
+//                                    Date fechaDesde, Date fechaHasta, String q,
+//                                    UUID userId) {
+//            // Implementación de búsqueda con criterios
+//            // Utilizamos un repositorio personalizado o especificación para la búsqueda
+//            return candidaturaRepository.buscarCandidaturas(estado, empresaNombre,
+//                    fechaDesde, fechaHasta, q, userId);
+//    }
 
     @Override
     @Transactional(readOnly = true)
