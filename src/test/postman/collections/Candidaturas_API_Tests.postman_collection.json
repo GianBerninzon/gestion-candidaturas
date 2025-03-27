@@ -135,11 +135,19 @@
 							"pm.test(\"Status code is 200\", function() {\r",
 							"    pm.response.to.have.status(200);\r",
 							"});\r",
-							"pm.test(\"Response is an array of user's candidaturas\", function() {\r",
+							"pm.test(\"Response is a paginated object with user's candidaturas\", function() {\r",
 							"    var jsonData = pm.response.json();\r",
-							"    pm.expect(jsonData).to.be.an('array');\r",
-							"    // Verificar que al menos hay una candidatura\r",
-							"    pm.expect(jsonData.length).to.be.greaterThan(0);\r",
+							"    \r",
+							"    // Verificar estructura de paginación\r",
+							"    pm.expect(jsonData).to.have.property('content');\r",
+							"    pm.expect(jsonData).to.have.property('pageNumber');\r",
+							"    pm.expect(jsonData).to.have.property('pageSize');\r",
+							"    pm.expect(jsonData).to.have.property('totalElements');\r",
+							"    pm.expect(jsonData).to.have.property('totalPages');\r",
+							"    \r",
+							"    // Verificar que hay contenido\r",
+							"    pm.expect(jsonData.content).to.be.an('array');\r",
+							"    pm.expect(jsonData.content.length).to.be.greaterThan(0);\r",
 							"});"
 						],
 						"type": "text/javascript",
@@ -160,13 +168,27 @@
 					}
 				],
 				"url": {
-					"raw": "{{base_url}}/api/candidaturas",
+					"raw": "{{base_url}}/api/candidaturas?page=0&size=10&sort=fecha,desc",
 					"host": [
 						"{{base_url}}"
 					],
 					"path": [
 						"api",
 						"candidaturas"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "0"
+						},
+						{
+							"key": "size",
+							"value": "10"
+						},
+						{
+							"key": "sort",
+							"value": "fecha,desc"
+						}
 					]
 				}
 			},
@@ -182,9 +204,18 @@
 							"pm.test(\"Status code is 200\", function() {\r",
 							"    pm.response.to.have.status(200);\r",
 							"});\r",
-							"pm.test(\"Admin can see all candidaturas\", function() {\r",
+							"pm.test(\"Admin can see all candidaturas in paginated format\", function() {\r",
 							"    var jsonData = pm.response.json();\r",
-							"    pm.expect(jsonData).to.be.an('array');\r",
+							"    \r",
+							"    // Verificar estructura de paginación\r",
+							"    pm.expect(jsonData).to.have.property('content');\r",
+							"    pm.expect(jsonData).to.have.property('pageNumber');\r",
+							"    pm.expect(jsonData).to.have.property('pageSize');\r",
+							"    pm.expect(jsonData).to.have.property('totalElements');\r",
+							"    pm.expect(jsonData).to.have.property('totalPages');\r",
+							"    \r",
+							"    // Verificar que hay contenido\r",
+							"    pm.expect(jsonData.content).to.be.an('array');\r",
 							"});"
 						],
 						"type": "text/javascript",
@@ -205,7 +236,7 @@
 					}
 				],
 				"url": {
-					"raw": "{{base_url}}/api/candidaturas/all",
+					"raw": "{{base_url}}/api/candidaturas/all?page=0&size=10&sort=fecha,desc",
 					"host": [
 						"{{base_url}}"
 					],
@@ -213,6 +244,20 @@
 						"api",
 						"candidaturas",
 						"all"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "0"
+						},
+						{
+							"key": "size",
+							"value": "10"
+						},
+						{
+							"key": "sort",
+							"value": "fecha,desc"
+						}
 					]
 				}
 			},
@@ -386,9 +431,15 @@
 							"});\r",
 							"pm.test(\"All returned candidaturas have ENTREVISTA estado\", function() {\r",
 							"    var jsonData = pm.response.json();\r",
-							"    pm.expect(jsonData).to.be.an('array');\r",
+							"    \r",
+							"    // Verificar estructura de paginación\r",
+							"    pm.expect(jsonData).to.have.property('content');\r",
+							"    pm.expect(jsonData).to.have.property('pageNumber');\r",
+							"    pm.expect(jsonData).to.have.property('totalElements');\r",
+							"    \r",
 							"    // Verificar que todas las candidaturas tienen estado ENTREVISTA\r",
-							"    jsonData.forEach(function(candidatura) {\r",
+							"    pm.expect(jsonData.content).to.be.an('array');\r",
+							"    jsonData.content.forEach(function(candidatura) {\r",
 							"        pm.expect(candidatura.estado).to.eql(\"ENTREVISTA\");\r",
 							"    });\r",
 							"});"
@@ -411,7 +462,7 @@
 					}
 				],
 				"url": {
-					"raw": "{{base_url}}/api/candidaturas/buscar?estado=ENTREVISTA",
+					"raw": "{{base_url}}/api/candidaturas/buscar?estado=ENTREVISTA&page=0&size=10&sort=fecha,desc",
 					"host": [
 						"{{base_url}}"
 					],
@@ -424,6 +475,18 @@
 						{
 							"key": "estado",
 							"value": "ENTREVISTA"
+						},
+						{
+							"key": "page",
+							"value": "0"
+						},
+						{
+							"key": "size",
+							"value": "10"
+						},
+						{
+							"key": "sort",
+							"value": "fecha,desc"
 						}
 					]
 				}

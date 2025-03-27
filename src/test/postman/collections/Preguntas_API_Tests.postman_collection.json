@@ -188,12 +188,22 @@
 							"pm.test(\"Status code is 200\", function() {\r",
 							"    pm.response.to.have.status(200);\r",
 							"});\r",
-							"pm.test(\"Response is an array of preguntas\", function() {\r",
+							"pm.test(\"Response is a paginated object of preguntas\", function() {\r",
 							"    var jsonData = pm.response.json();\r",
-							"    pm.expect(jsonData).to.be.an('array');\r",
-							"    pm.expect(jsonData.length).to.be.greaterThan(0);\r",
+							"    \r",
+							"    // Verificar estructura de paginación\r",
+							"    pm.expect(jsonData).to.have.property('content');\r",
+							"    pm.expect(jsonData).to.have.property('pageNumber');\r",
+							"    pm.expect(jsonData).to.have.property('pageSize');\r",
+							"    pm.expect(jsonData).to.have.property('totalElements');\r",
+							"    pm.expect(jsonData).to.have.property('totalPages');\r",
+							"    \r",
+							"    // Verificar que hay contenido\r",
+							"    pm.expect(jsonData.content).to.be.an('array');\r",
+							"    pm.expect(jsonData.content.length).to.be.greaterThan(0);\r",
+							"    \r",
 							"    // Verificar que todas las preguntas pertenecen a la candidatura\r",
-							"    jsonData.forEach(function(pregunta) {\r",
+							"    jsonData.content.forEach(function(pregunta) {\r",
 							"        pm.expect(pregunta.candidatura.id).to.eql(pm.environment.get(\"candidatura_id\"));\r",
 							"    });\r",
 							"});"
@@ -216,7 +226,7 @@
 					}
 				],
 				"url": {
-					"raw": "{{base_url}}/api/preguntas?candidaturaId={{candidatura_id}}",
+					"raw": "{{base_url}}/api/preguntas?candidaturaId={{candidatura_id}}&page=0&size=10&sort=id,asc",
 					"host": [
 						"{{base_url}}"
 					],
@@ -228,6 +238,18 @@
 						{
 							"key": "candidaturaId",
 							"value": "{{candidatura_id}}"
+						},
+						{
+							"key": "page",
+							"value": "0"
+						},
+						{
+							"key": "size",
+							"value": "10"
+						},
+						{
+							"key": "sort",
+							"value": "id,asc"
 						}
 					]
 				}

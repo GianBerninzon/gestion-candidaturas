@@ -192,10 +192,19 @@
 							"pm.test(\"Status code is 200\", function() {\r",
 							"    pm.response.to.have.status(200);\r",
 							"});\r",
-							"pm.test(\"Response is an array of reclutadores\", function() {\r",
+							"pm.test(\"Response is a paginated object of reclutadores\", function() {\r",
 							"    var jsonData = pm.response.json();\r",
-							"    pm.expect(jsonData).to.be.an('array');\r",
-							"    pm.expect(jsonData.length).to.be.greaterThan(0);\r",
+							"    \r",
+							"    // Verificar estructura de paginación\r",
+							"    pm.expect(jsonData).to.have.property('content');\r",
+							"    pm.expect(jsonData).to.have.property('pageNumber');\r",
+							"    pm.expect(jsonData).to.have.property('pageSize');\r",
+							"    pm.expect(jsonData).to.have.property('totalElements');\r",
+							"    pm.expect(jsonData).to.have.property('totalPages');\r",
+							"    \r",
+							"    // Verificar que hay contenido\r",
+							"    pm.expect(jsonData.content).to.be.an('array');\r",
+							"    pm.expect(jsonData.content.length).to.be.greaterThan(0);\r",
 							"});"
 						],
 						"type": "text/javascript",
@@ -216,13 +225,27 @@
 					}
 				],
 				"url": {
-					"raw": "{{base_url}}/api/reclutador",
+					"raw": "{{base_url}}/api/reclutador?page=0&size=10&sort=nombre,asc",
 					"host": [
 						"{{base_url}}"
 					],
 					"path": [
 						"api",
 						"reclutador"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "0"
+						},
+						{
+							"key": "size",
+							"value": "10"
+						},
+						{
+							"key": "sort",
+							"value": "nombre,asc"
+						}
 					]
 				}
 			},
@@ -285,14 +308,25 @@
 							"pm.test(\"Status code is 200\", function() {\r",
 							"    pm.response.to.have.status(200);\r",
 							"});\r",
-							"pm.test(\"Response contains reclutadores from empresa\", function() {\r",
+							"pm.test(\"Response contains paginated reclutadores from empresa\", function() {\r",
 							"  var jsonData = pm.response.json();\r",
-							"  pm.expect(jsonData).to.be.an('array');\r",
+							"  \r",
+							"  // Verificar estructura de paginación\r",
+							"  pm.expect(jsonData).to.have.property('content');\r",
+							"  pm.expect(jsonData).to.have.property('pageNumber');\r",
+							"  pm.expect(jsonData).to.have.property('pageSize');\r",
+							"  pm.expect(jsonData).to.have.property('totalElements');\r",
+							"  pm.expect(jsonData).to.have.property('totalPages');\r",
+							"  \r",
+							"  // Verificar que hay contenido\r",
+							"  pm.expect(jsonData.content).to.be.an('array');\r",
 							"  \r",
 							"  // Verificar que todos los reclutadores pertenecen a la empresa\r",
-							"  jsonData.forEach(function(reclutador) {\r",
-							"    pm.expect(reclutador.empresaId).to.eql(pm.environment.get(\"empresa_id\"));\r",
-							"  });\r",
+							"  if (jsonData.content.length > 0) {\r",
+							"    jsonData.content.forEach(function(reclutador) {\r",
+							"      pm.expect(reclutador.empresaId).to.eql(pm.environment.get(\"empresa_id\"));\r",
+							"    });\r",
+							"  }\r",
 							"});"
 						],
 						"type": "text/javascript",
@@ -313,7 +347,7 @@
 					}
 				],
 				"url": {
-					"raw": "{{base_url}}/api/reclutador/empresa/{{empresa_id}}",
+					"raw": "{{base_url}}/api/reclutador/empresa/{{empresa_id}}?page=0&size=10&sort=nombre,asc",
 					"host": [
 						"{{base_url}}"
 					],
@@ -322,6 +356,20 @@
 						"reclutador",
 						"empresa",
 						"{{empresa_id}}"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "0"
+						},
+						{
+							"key": "size",
+							"value": "10"
+						},
+						{
+							"key": "sort",
+							"value": "nombre,asc"
+						}
 					]
 				}
 			},
