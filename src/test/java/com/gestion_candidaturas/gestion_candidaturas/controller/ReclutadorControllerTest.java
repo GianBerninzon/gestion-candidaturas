@@ -2,6 +2,7 @@ package com.gestion_candidaturas.gestion_candidaturas.controller;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gestion_candidaturas.gestion_candidaturas.dto.PageResponseDTO;
 import com.gestion_candidaturas.gestion_candidaturas.dto.ReclutadorDTO;
 import com.gestion_candidaturas.gestion_candidaturas.model.Empresa;
 import com.gestion_candidaturas.gestion_candidaturas.model.Reclutador;
@@ -16,6 +17,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -24,6 +28,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.*;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -31,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Pruebas para el controlador de reclutadores.
- * Verifica operaciones CRUD y control de acceso.
+ * Verifica operaciones CRUD y control de acceso y paginacion.
  */
 @WebMvcTest(ReclutadorController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -59,7 +64,7 @@ public class ReclutadorControllerTest {
     private JwtUtil jwtUtil;
 
     /**
-     * Verifica que se puedan obtener todos los reclutadores.
+     * Verifica que se puedan obtener todos los reclutadores con paginacion.
      */
     @Test
     @WithMockUser(roles = "USER")
@@ -87,15 +92,23 @@ public class ReclutadorControllerTest {
 
         List<Reclutador> reclutadores = Arrays.asList(reclutador1, reclutador2);
 
+        // Crear objeto Page para respuesta paginada
+        Page<Reclutador> reclutadoresPage = new PageImpl<>(reclutadores);
+
         // Configurar comportamiento del mock
-        when(reclutadorService.findAll()).thenReturn(reclutadores);
+        when(reclutadorService.findAll(any(Pageable.class))).thenReturn(reclutadoresPage);
 
 
         // Ejecutar solicitud y verificar resultado
-        mockMvc.perform(get("/api/reclutador"))
+        mockMvc.perform(get("/api/reclutador")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("sort", "nombre, asc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nombre").value("Reclutador 1"))
-                .andExpect(jsonPath("$[1].nombre").value("Reclutador 2"));
+                .andExpect(jsonPath("$.content[0].nombre").value("Reclutador 1"))
+                .andExpect(jsonPath("$.content[1].nombre").value("Reclutador 2"))
+                .andExpect(jsonPath("$.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(reclutadores.size()));
     }
 
     /**
@@ -145,7 +158,7 @@ public class ReclutadorControllerTest {
     }
 
     /**
-     * Verifica que se puedan obtener los reclutadores por empresa.
+     * Verifica que se puedan obtener los reclutadores por empresa con paginacion.
      */
     @Test
     @WithMockUser(roles = "USER")
@@ -161,22 +174,45 @@ public class ReclutadorControllerTest {
         reclutador1.setId(UUID.randomUUID());
         reclutador1.setNombre("Reclutador 1");
         reclutador1.setEmpresa(empresa);
+        reclutador1.setLinkinUrl("https://linkedin.com/in/reclutador1");
 
         Reclutador reclutador2 = new Reclutador();
         reclutador2.setId(UUID.randomUUID());
         reclutador2.setNombre("Reclutador 2");
         reclutador2.setEmpresa(empresa);
+        reclutador2.setLinkinUrl("https://linkedin.com/in/reclutador2");
 
         List<Reclutador> reclutadores = Arrays.asList(reclutador1, reclutador2);
 
+        // Crear objeto Page para respuesta paginada
+        Page<Reclutador> reclutadoresPage = new PageImpl<>(reclutadores);
+
+        // Crear pagina de DTOs para la respuesta esperada(mapeo que hace el controlador)
+        Page<Map<String, Object>> reclutadoresDTOPage = reclutadoresPage.map(r -> {
+            Map<String, Object> dto = new HashMap<>();
+            dto.put("id", r.getId());
+            dto.put("nombre", r.getNombre());
+            dto.put("linkinUrl", r.getLinkinUrl());
+            dto.put("empresaId", empresaId);
+            return dto;
+        });
+
+        //PageResponseDTO que envolveria la respues de Page<Map<String, Object>>
+        PageResponseDTO<Map<String, Object>> expectedResponse = new PageResponseDTO<>(reclutadoresDTOPage);
+
         // Configurar comportamiento del mock
-        when(reclutadorService.findByEmpresaId(empresaId)).thenReturn(reclutadores);
+        when(reclutadorService.findByEmpresaId(eq(empresaId), any(Pageable.class))).thenReturn(reclutadoresPage);
 
         // Ejecutar solicitud y verificar resultado
-        mockMvc.perform(get("/api/reclutador/empresa/{empresaId}", empresaId))
+        mockMvc.perform(get("/api/reclutador/empresa/{empresaId}", empresaId)
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("sort", "nombre,asc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nombre").value("Reclutador 1"))
-                .andExpect(jsonPath("$[1].nombre").value("Reclutador 2"));
+                .andExpect(jsonPath("$.content[0].nombre").value("Reclutador 1"))
+                .andExpect(jsonPath("$.content[1].nombre").value("Reclutador 2"))
+                .andExpect(jsonPath("$.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(reclutadores.size()));
     }
 
     /**

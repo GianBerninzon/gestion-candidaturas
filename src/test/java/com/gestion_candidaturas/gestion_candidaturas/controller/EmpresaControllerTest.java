@@ -10,6 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -21,6 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Pruebas para el controlador de empresas.
  * Verifica las operaciones CRUD y acceso según roles.
+ * Incluye soporte para pruebas de paginacion
  */
 @WebMvcTest(EmpresaController.class)
 // Desactiva filtros de seguridad para enfocarse en la lógica del controlador
@@ -70,14 +75,22 @@ public class EmpresaControllerTest {
 
         List<Empresa> empresas = Arrays.asList(empresa1, empresa2);
 
+        //Crear Objeto Page para la respuesta paginada
+        Page<Empresa> empresasPage = new PageImpl<>(empresas);
+
         // Configurar comportamiento del mock
-        when(empresaService.findAll()).thenReturn(empresas);
+        when(empresaService.findAll(any(Pageable.class))).thenReturn(empresasPage);
 
         // Ejecutar solicitud y verificar resultado
-        mockMvc.perform(get("/api/empresas"))
+        mockMvc.perform(get("/api/empresas")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("sort", "nombres, asc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.[0].nombre").value("Empresa Test 1"))
-                .andExpect(jsonPath("$.[1].nombre").value("Empresa Test 2"));
+                .andExpect(jsonPath("$.content[0].nombre").value("Empresa Test 1"))
+                .andExpect(jsonPath("$.content[1].nombre").value("Empresa Test 2"))
+                .andExpect(jsonPath("$.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(empresas.size()));
     }
 
     /**
@@ -221,7 +234,45 @@ public class EmpresaControllerTest {
         // Ejecutar solicitud y verificar resultado
         mockMvc.perform(get("/api/empresas/with-users"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nombre").value("Empresa 1"))
-                .andExpect(jsonPath("$[1].nombre").value("Empresa 2"));
+                .andExpect(jsonPath("$.[0].nombre").value("Empresa 1"))
+                .andExpect(jsonPath("$.[1].nombre").value("Empresa 2"));
+    }
+
+    /**
+     * Verifica que la busqueda de empresas por nombre con paginacion funcione correctamente.
+     */
+    @Test
+    @WithMockUser(roles = "USER")
+    public void buscarPorNombreShouldReturnPaginatedEmpresas() throws Exception{
+        //Datos de prueba
+        Empresa empresa1 = new Empresa();
+        empresa1.setId(UUID.randomUUID());
+        empresa1.setNombre("Google España");
+        empresa1.setCorreo("contacto@google.es");
+
+        Empresa empresa2 = new Empresa();
+        empresa2.setId(UUID.randomUUID());
+        empresa2.setNombre("Google Portugal");
+        empresa2.setCorreo("contacto@google.pt");
+
+        List<Empresa> empresas = Arrays.asList(empresa1, empresa2);
+
+        //Crear objeto Page para la respuesta paginada
+        Page<Empresa> empresasPage = new PageImpl<>(empresas);
+
+        //COnfigurar comportamiento del mock
+        when(empresaService.findByNombreContaining(eq("Google"), any(Pageable.class))).thenReturn(empresasPage);
+
+        // Ehcutar solicitud y verificar resultado
+        mockMvc.perform(get("/api/empresas/buscar")
+                .param("nombre", "Google")
+                .param("page", "0")
+                .param("size", "10")
+                .param("sort", "nombre, asc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].nombre").value("Google España"))
+                .andExpect(jsonPath("$.content[1].nombre").value("Google Portugal"))
+                .andExpect(jsonPath("$.pageNumber").value(0))
+                .andExpect(jsonPath("totalElements").value(empresas.size()));
     }
 }

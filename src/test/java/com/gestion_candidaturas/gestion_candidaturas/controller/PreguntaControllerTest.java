@@ -11,6 +11,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -19,13 +22,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.*;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * Pruebas para el controlador de preguntas de entrevista.
- * Verifica operaciones CRUD y control de acceso.
+ * Verifica operaciones CRUD y control de acceso y paginacion.
  */
 @WebMvcTest(PreguntaController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -80,15 +84,23 @@ public class PreguntaControllerTest {
 
         List<Pregunta> preguntas = Arrays.asList(pregunta1, pregunta2);
 
+        // Crear objeto Page para la respuesta paginada
+        Page<Pregunta> preguntasPage = new PageImpl<>(preguntas);
+
         // Configurar comportamiento del mock
-        when(preguntaService.findByCandidaturaId(candidatura.getId())).thenReturn(preguntas);
+        when(preguntaService.findByCandidaturaId(eq(candidatura.getId()), any(Pageable.class))).thenReturn(preguntasPage);
 
         // Ejecutar solicitud y verificar resultado
         mockMvc.perform(get("/api/preguntas")
-                        .param("candidaturaId", candidatura.getId().toString()))
+                        .param("candidaturaId", candidatura.getId().toString())
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("sort", "id,asc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].pregunta").value("¿Cuál es tu experiencia en Java?"))
-                .andExpect(jsonPath("$[1].pregunta").value("¿Has trabajado con Spring Boot?"));
+                .andExpect(jsonPath("$.content[0].pregunta").value("¿Cuál es tu experiencia en Java?"))
+                .andExpect(jsonPath("$.content[1].pregunta").value("¿Has trabajado con Spring Boot?"))
+                .andExpect(jsonPath("$.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(preguntas.size()));
     }
 
     /**

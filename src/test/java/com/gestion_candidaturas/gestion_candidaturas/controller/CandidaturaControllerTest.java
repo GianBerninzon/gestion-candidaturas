@@ -12,6 +12,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -29,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Pruebas para el controlador de candidaturas.
  * Verifica las operaciones CRUD y filtrado de candidaturas.
+ * Incluye soporte para pruebas de paginacion.
  */
 @WebMvcTest(CandidaturaController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -82,15 +86,23 @@ public class CandidaturaControllerTest {
 
         List<Candidatura> candidaturas = Arrays.asList(candidatura1, candidatura2);
 
+        // Crear objeto Page para la respuesta paginada
+        Page<Candidatura> candidaturasPage = new PageImpl<>(candidaturas);
+
         // Configurar comportamiento del mock
         when(userService.getCurrentUser()).thenReturn(currentUser);
-        when(candidaturaService.findByUserId(currentUser.getId())).thenReturn(candidaturas);
+        when(candidaturaService.findByUserId(eq(currentUser.getId()), any(Pageable.class))).thenReturn(candidaturasPage);
 
         // Ejecutar solicitud y verificar resultado
-        mockMvc.perform(get("/api/candidaturas"))
+        mockMvc.perform(get("/api/candidaturas")
+                    .param("page", "0")
+                    .param("size", "10")
+                    .param("sort", "fecha, desc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].cargo").value("Desarrollador Java"))
-                .andExpect(jsonPath("$[1].cargo").value("Analista de Datos"));
+                .andExpect(jsonPath("$.content[0].cargo").value("Desarrollador Java"))
+                .andExpect(jsonPath("$.content[1].cargo").value("Analista de Datos"))
+                .andExpect(jsonPath("$.pageSize").value(candidaturas.size()))
+                .andExpect(jsonPath("$.totalElements").value(candidaturas.size()));
     }
 
     /**
@@ -121,14 +133,22 @@ public class CandidaturaControllerTest {
 
         List<Candidatura> candidaturas = Arrays.asList(candidatura1, candidatura2);
 
+        //Crear objeto Page para la respuesta Paginada
+        Page<Candidatura> candidaturasPage = new PageImpl<>(candidaturas);
+
         // Configurar comportamiento del mock
-        when(candidaturaService.findAll()).thenReturn(candidaturas);
+        when(candidaturaService.findAll(any(Pageable.class))).thenReturn(candidaturasPage);
 
         // Ejecutar solicitud y verificar resultado
-        mockMvc.perform(get("/api/candidaturas/all"))
+        mockMvc.perform(get("/api/candidaturas/all")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("sort", "fecha, desc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].cargo").value("Desarrollador Java"))
-                .andExpect(jsonPath("$[1].cargo").value("Analista de Datos"));
+                .andExpect(jsonPath("$.content[0].cargo").value("Desarrollador Java"))
+                .andExpect(jsonPath("$.content[1].cargo").value("Analista de Datos"))
+                .andExpect(jsonPath("$.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(candidaturas.size()));
     }
 
     /**
@@ -269,6 +289,9 @@ public class CandidaturaControllerTest {
 
         List<Candidatura> candidaturasFiltradas = List.of(candidatura1);
 
+        // Crear objeto Page para respuesta paginada
+        Page<Candidatura> candidaturasPage = new PageImpl<>(candidaturasFiltradas);
+
         // Configurar comportamiento del mock
         when(userService.getCurrentUser()).thenReturn(currentUser);
         when(candidaturaService.buscar(
@@ -277,17 +300,23 @@ public class CandidaturaControllerTest {
                 any(),
                 any(),
                 eq("Java"),
-                eq(currentUser.getId())
-        )).thenReturn(candidaturasFiltradas);
+                eq(currentUser.getId()),
+                any(Pageable.class)
+        )).thenReturn(candidaturasPage);
 
         // Ejecutar solicitud y verificar resultado
         mockMvc.perform(get("/api/candidaturas/buscar")
                         .param("estado", "ENTREVISTA")
                         .param("empresa", "Empresa")
-                        .param("q", "Java"))
+                        .param("q", "Java")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("sort", "fecha, desc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].cargo").value("Desarrollador Java"))
-                .andExpect(jsonPath("$[0].estado").value("ENTREVISTA"));
+                .andExpect(jsonPath("$.content[0].cargo").value("Desarrollador Java"))
+                .andExpect(jsonPath("$.content[0].estado").value("ENTREVISTA"))
+                .andExpect(jsonPath("$.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(candidaturasFiltradas.size()));
 
     }
 }
