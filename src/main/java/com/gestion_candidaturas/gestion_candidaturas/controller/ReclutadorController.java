@@ -1,12 +1,18 @@
 package com.gestion_candidaturas.gestion_candidaturas.controller;
 
 
+import com.gestion_candidaturas.gestion_candidaturas.dto.CandidaturaWithEmpresaDTO;
 import com.gestion_candidaturas.gestion_candidaturas.dto.PageResponseDTO;
 import com.gestion_candidaturas.gestion_candidaturas.dto.ReclutadorDTO;
+import com.gestion_candidaturas.gestion_candidaturas.dto.ReclutadorWithEmpresaDTO;
+import com.gestion_candidaturas.gestion_candidaturas.model.Candidatura;
 import com.gestion_candidaturas.gestion_candidaturas.model.Empresa;
 import com.gestion_candidaturas.gestion_candidaturas.model.Reclutador;
+import com.gestion_candidaturas.gestion_candidaturas.model.User;
+import com.gestion_candidaturas.gestion_candidaturas.service.CandidaturaMapper;
 import com.gestion_candidaturas.gestion_candidaturas.service.CandidaturaService;
 import com.gestion_candidaturas.gestion_candidaturas.service.EmpresaService;
+import com.gestion_candidaturas.gestion_candidaturas.service.ReclutadorMapper;
 import com.gestion_candidaturas.gestion_candidaturas.service.ReclutadorService;
 import com.gestion_candidaturas.gestion_candidaturas.service.UserService;
 import com.gestion_candidaturas.gestion_candidaturas.util.PaginacionUtil;
@@ -34,6 +40,8 @@ public class ReclutadorController {
     private final UserService userService;
     private final EmpresaService empresaService;
     private final CandidaturaService candidaturaService;
+    private final ReclutadorMapper reclutadorMapper;
+    private final CandidaturaMapper candidaturaMapper;
 
     /**
      * Constructor para inyección de dependencias.
@@ -44,11 +52,14 @@ public class ReclutadorController {
      * @param candidaturaService Servicio para operaciones con candidaturas
      */
     public ReclutadorController(ReclutadorService reclutadorService, UserService userService,
-                                EmpresaService empresaService, CandidaturaService candidaturaService){
+                                EmpresaService empresaService, CandidaturaService candidaturaService,
+                                ReclutadorMapper reclutadorMapper, CandidaturaMapper candidaturaMapper){
         this.reclutadorService = reclutadorService;
         this.userService = userService;
         this.candidaturaService = candidaturaService;
         this.empresaService = empresaService;
+        this.reclutadorMapper = reclutadorMapper;
+        this.candidaturaMapper = candidaturaMapper;
     }
 
     /**
@@ -70,13 +81,13 @@ public class ReclutadorController {
      * @param page Número de página (0-indexed)
      * @param size Tamaño de la página
      * @param sort Campos y direcciones de ordenamiento
-     * @return ResponseEntity con la página de reclutadores
+     * @return ResponseEntity con la página de reclutadores con informacion de empresa
      *
      * @see RF-04: Consulta de reclutadores con paginación
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
-    public ResponseEntity<PageResponseDTO<Reclutador>> getAllReclutadores(
+    public ResponseEntity<PageResponseDTO<ReclutadorWithEmpresaDTO>> getAllReclutadores(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "nombre,asc") String[] sort){
@@ -86,7 +97,10 @@ public class ReclutadorController {
         //Obtener reclutadores paginados
         Page<Reclutador> reclutadores = reclutadorService.findAll(pageable);
 
-        return ResponseEntity.ok(new PageResponseDTO<>(reclutadores));
+        //Convertir a DTOs con informacion de empresa
+        Page<ReclutadorWithEmpresaDTO> reclutadoresDTO = reclutadores.map(reclutador -> reclutadorMapper.toReclutadorWithEmpresaDTO(reclutador));
+
+        return ResponseEntity.ok(new PageResponseDTO<>(reclutadoresDTO));
     }
 
     /**
@@ -99,10 +113,20 @@ public class ReclutadorController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
-    public ResponseEntity<Reclutador> getReclutadorById(@PathVariable UUID id) {
+    // public ResponseEntity<Reclutador> getReclutadorById(@PathVariable UUID id) {
+    //     Optional<Reclutador> reclutador = reclutadorService.findById(id);
+    //     return reclutador.map(ResponseEntity::ok)
+    //             .orElse(ResponseEntity.notFound().build());
+    // }
+    public ResponseEntity<ReclutadorWithEmpresaDTO> getReclutadorById(@PathVariable UUID id){
         Optional<Reclutador> reclutador = reclutadorService.findById(id);
-        return reclutador.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        if(reclutador.isEmpty()){
+            return ResponseEntity.notFound().build();
+        }
+
+        // Convierte a DTO con empresa incluida
+        ReclutadorWithEmpresaDTO responseDTO = reclutadorMapper.toResponseDTO(reclutador.get());
+        return ResponseEntity.ok(responseDTO);
     }
 
     /**
@@ -364,5 +388,51 @@ public class ReclutadorController {
         boolean desasociado = reclutadorService.desasociarDeCandidatura(reclutadorId, candidaturaId);
         return desasociado ? ResponseEntity.ok().build() :
                 ResponseEntity.notFound().build();
+    }
+
+    /**
+     * Obtiene todas las candidaturas asociadas a un reclutador específico.
+     * Los usuarios normales "USER" solo pueden ver sus propias candidaturas.
+     * Los administradores "ADMIN" y "ROOT" pueden ver todas las candidaturas.
+     * 
+     * @param id ID del reclutador
+     * @param page Número de página (0-indexed)
+     * @param size Tamaño de la página
+     * @param sort Campos y direcciones de ordenamiento
+     * @return pagina de candidaturas asociadas al reclutador segun sus permisos
+     */
+    @GetMapping("/{id}/candidaturas")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
+    public ResponseEntity<PageResponseDTO<CandidaturaWithEmpresaDTO>> getCandidaturasByReclutador(
+        @PathVariable UUID id,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "fecha,desc") String[] sort){
+            // Verificar si el reclutador existe
+            Optional<Reclutador> reclutador = reclutadorService.findById(id);
+            if(reclutador.isEmpty()){
+                return ResponseEntity.notFound().build();
+            }
+
+            // Obtener el usuario actual
+            User currentUser = userService.getCurrentUser();
+
+            // Crear objeto pageable con la informacion de paginacion y ordenamiento
+            Pageable pageable = PaginacionUtil.crearPageable(page, size, sort);
+
+            // Obtener candidaturas segun el rol del usuario
+            Page<Candidatura> candidaturas;
+            if(currentUser.hasRole("ADMIN") || currentUser.hasRole("ROOT")){
+                // Administrador ver todas las candidaturas
+                candidaturas = candidaturaService.findByReclutadoresId(id, pageable);
+            }else{
+                // Usuario normal solo ver sus propias candidaturas
+                candidaturas = candidaturaService.findByReclutadoresIdAndUserId(id, currentUser.getId(), pageable);
+            }
+
+            // Convertir a DTOs con informacion de empresa
+            PageResponseDTO<CandidaturaWithEmpresaDTO> responseDTO = candidaturaMapper.toPageResponseDTO(candidaturas);
+
+            return ResponseEntity.ok(responseDTO);
     }
 }

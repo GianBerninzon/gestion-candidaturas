@@ -3,6 +3,8 @@ package com.gestion_candidaturas.gestion_candidaturas.service;
 import com.gestion_candidaturas.gestion_candidaturas.model.Candidatura;
 import com.gestion_candidaturas.gestion_candidaturas.model.EstadoCandidatura;
 import com.gestion_candidaturas.gestion_candidaturas.repository.CandidaturaRepository;
+import com.gestion_candidaturas.gestion_candidaturas.repository.PreguntaRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,10 +24,12 @@ import java.util.UUID;
 public class CandidaturaServiceImpl implements CandidaturaService{
 
     private final CandidaturaRepository candidaturaRepository;
+    private final PreguntaRepository preguntaRepository;
 
     @Autowired
-    public CandidaturaServiceImpl(CandidaturaRepository candidaturaRepository){
+    public CandidaturaServiceImpl(CandidaturaRepository candidaturaRepository, PreguntaRepository preguntaRepository){
         this.candidaturaRepository = candidaturaRepository;
+        this.preguntaRepository = preguntaRepository;
     }
 
 
@@ -80,8 +85,17 @@ public class CandidaturaServiceImpl implements CandidaturaService{
     @Transactional
     public boolean deleteById(UUID id) {
         if (candidaturaRepository.existsById(id)) {
-            candidaturaRepository.deleteById(id);
-            return true;
+            try {
+                // Eliminamos las preguntas asociadas
+                preguntaRepository.deleteByCandidaturaId(id);
+
+                // Eliminamos la candidatura
+                candidaturaRepository.deleteById(id);
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
         }
         return false;
     }
@@ -116,4 +130,66 @@ public class CandidaturaServiceImpl implements CandidaturaService{
         return candidatura.isPresent() && candidatura.get().getUser().getId().equals(userId);
 
     }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Candidatura> findByReclutadoresId(UUID reclutadorId, Pageable pageable) {
+        return candidaturaRepository.findByReclutadoresId(reclutadorId, pageable);
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Candidatura> findByReclutadoresIdAndUserId(UUID reclutadorId, UUID userId, Pageable pageable) {
+       return candidaturaRepository.findByReclutadoresIdAndUserId(reclutadorId, userId, pageable);
+    }
+
+
+    /**
+     * Implementa la búsqueda de candidaturas para administradores, permitiendo filtrar
+     * opcionalmente por palabra clave y/o usuario específico.
+     * Si no se proporciona un userId, devuelve candidaturas de todos los usuarios.
+     *
+     * @param q Texto de búsqueda para filtrar por cargo, notas o empresa
+     * @param userId ID de usuario específico (opcional)
+     * @param pageable Objeto de paginación
+     * @return Página de candidaturas que cumplen con los criterios
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Candidatura> buscarAdmin(String q, UUID userId, Pageable pageable) {
+        return candidaturaRepository.buscarCandidaturasAdmin(q, userId, pageable);
+    }
+
+
+    @Override
+    @Transactional
+    public int deleteAllByIds(List<UUID> ids) {
+       int count = 0;
+
+       // Filtramos solo los IDs que existen
+       List<UUID> existingIds = ids.stream()
+                                  .filter(candidaturaRepository::existsById)
+                                  .toList();
+
+       if(!existingIds.isEmpty()){
+        try {
+            // Primero eliminamos todas las preguntas asociadas a estas candidaturas
+            preguntaRepository.deleteByCandidaturaIdIn(existingIds);
+
+            // Luego eliminamos las candidaturas
+            for(UUID id: existingIds){
+                candidaturaRepository.deleteById(id);
+                count++;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+       }
+
+       return count;
+    }
+
+    
 }

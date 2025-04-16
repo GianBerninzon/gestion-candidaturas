@@ -4,9 +4,11 @@ import com.gestion_candidaturas.gestion_candidaturas.model.Pregunta;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface PreguntaRepository extends JpaRepository<Pregunta, UUID> {
@@ -43,4 +45,22 @@ public interface PreguntaRepository extends JpaRepository<Pregunta, UUID> {
      */
     @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Pregunta p Where p.id = :preguntaId AND p.usuario.id = :usuarioId")
     boolean isPreguntaOwner(@Param("preguntaId") UUID preguntaId, @Param("usuarioId") UUID usuarioId);
+
+    /**
+     * Elimina todas las preguntas asociadas a un conjunto de candidaturas.
+     * 
+     * @param candidaturasIds Lista de IDs de candidaturas cuydas preguntas se eliminaran
+     */
+    @Modifying
+    @Query("DELETE FROM Pregunta p WHERE p.candidatura.id IN :candidaturasIds")
+    void deleteByCandidaturaIdIn(@Param("candidaturasIds") List<UUID> candidaturasIds);
+
+    /**
+     * Elimina todas las preguntas asociadas a una candidatura especifica.
+     * 
+     * @param candidaturaId ID de la candidatura cuyas preguntas se eliminaran
+     */
+    @Modifying
+    @Query("DELETE FROM Pregunta p WHERE p.candidatura.id = :candidaturaId")
+    void deleteByCandidaturaId(@Param("candidaturaId") UUID candidaturaId);
 }

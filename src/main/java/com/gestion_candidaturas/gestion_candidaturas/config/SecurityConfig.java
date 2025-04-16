@@ -84,14 +84,35 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource(){
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // Origen del frontend
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization"));
+        // Permitir solicitudes desde múltiples orígenes del frontend
+        configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://localhost:5174"
+        ));
+        // Permitir todos los métodos HTTP comunes
+        configuration.setAllowedMethods(Arrays.asList(
+            "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"
+        ));
+        // Permitir encabezados comunes en las solicitudes
+        configuration.setAllowedHeaders(Arrays.asList(
+            "Authorization", "Content-Type", "X-Requested-With", 
+            "Accept", "Origin", "Access-Control-Request-Method", 
+            "Access-Control-Request-Headers"
+        ));
+        // Exponer encabezados para que el cliente pueda acceder a ellos
+        configuration.setExposedHeaders(Arrays.asList(
+            "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials", 
+            "Authorization"
+        ));
+        // Permitir credenciales (cookies, encabezados de autorización)
         configuration.setAllowCredentials(true);
+        // Establecer el tiempo máximo que el navegador puede almacenar en caché la respuesta preflight
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
-        return  source;
+        return source;
     }
 
     /**

@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -86,6 +87,18 @@ public interface CandidaturaService {
             Date fechaDesde, Date fechaHasta, String q, UUID userId, Pageable pageable);
 
     /**
+     * Busca candidaturas para administradores con filtros opcionales.
+     *  A diferencia del método buscar estándar, este no restringe los resultados
+     *  a un usuario específico a menos que se proporcione el parámetro userId.
+     * 
+     *  @param q Texto de búsqueda general para filtrar por cargo, notas o empresa (opcional).
+     * @param userId ID del usuario para filtrar (opcional, si es null muestra todas las candidaturas).
+     * @param pageable Objeto de paginación para controlar el tamaño y número de página.
+     * @return Página de candidaturas que cumplen los criterios especificados.
+     */
+    Page<Candidatura> buscarAdmin(String q, UUID userId, Pageable pageable);
+
+    /**
      * Verifica si un usuario es propietario de una candidatura.
      *
      * @param candidaturaId ID de la candidatura.
@@ -93,4 +106,31 @@ public interface CandidaturaService {
      * @return true si el usuario es propietario, false en caso contrario.
      */
     boolean isOwner(UUID candidaturaId, UUID userId);
+
+    /**
+     * Encuentra todas las candidaturas asociadas a un reclutador especifico.
+     * 
+     * @param reclutadorId ID del reclutador
+     * @param pageable Objeto de paginacion
+     * @return Lista de candidaturas asociadas al reclutador
+     */
+    Page<Candidatura> findByReclutadoresId(UUID reclutadorId, Pageable pageable);
+
+    /**
+     * Encuentra las candidaturas asociadas a un reclutador especifico que pertenecen a un usuario especifico.
+     * 
+     * @param reclutadorId ID del reclutador
+     * @param userId ID del usuario
+     * @param pageable Objeto de paginacion
+     * @return lista de candidaturas del usuario asociadas al reclutador
+     */
+    Page<Candidatura> findByReclutadoresIdAndUserId(UUID reclutadorId, UUID userId, Pageable pageable);
+
+    /**
+     * Elimina multiples candidaturas por sis identificadores.
+     * 
+     * @param ids Lista de identificadores unicos de las candidaturas a eliminar.
+     * @return El numero de candidaturas eliminadas.
+     */
+    int deleteAllByIds(List<UUID> ids);
 }

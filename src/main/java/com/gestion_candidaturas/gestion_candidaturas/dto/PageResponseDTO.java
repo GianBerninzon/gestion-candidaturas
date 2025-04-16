@@ -3,6 +3,8 @@ package com.gestion_candidaturas.gestion_candidaturas.dto;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * DTO genérico para respuestas paginadas.
@@ -31,6 +33,26 @@ public class PageResponseDTO<T> {
      */
     public PageResponseDTO(Page<T> page){
         this.content = page.getContent();
+        this.pageNumber = page.getNumber();
+        this.pageSize = page.getSize();
+        this.totalElements = page.getTotalElements();
+        this.totalPages = page.getTotalPages();
+        this.first = page.isFirst();
+        this.last = page.isLast();
+    }
+
+    /**
+     * Constructor para crear DTO a partir de un objeto Page de Spring
+     * convirtiendo los elementos a otro tipo usando la funcion proporcionada.
+     * 
+     * @param page Objeto Page con los datos paginados
+     * @param mapper funcion para convertir los elementos al tipo deseado
+     * @param <U> tipo original de los elementos en la pagina
+     */
+    public <U> PageResponseDTO(Page<U> page, Function<U, T> mapper){
+        this.content = page.getContent().stream()
+            .map(mapper)
+            .collect(Collectors.toList());
         this.pageNumber = page.getNumber();
         this.pageSize = page.getSize();
         this.totalElements = page.getTotalElements();

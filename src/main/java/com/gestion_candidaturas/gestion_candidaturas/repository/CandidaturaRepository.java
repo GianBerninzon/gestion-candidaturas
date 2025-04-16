@@ -86,5 +86,50 @@ public interface CandidaturaRepository extends JpaRepository<Candidatura, UUID> 
             Pageable pageable
             );
 
+    /**
+     * Método que permite a los administradores buscar candidaturas de cualquier usuario.
+     * Similar a buscarCandidaturas pero:
+     * No filtra por un userId específico, permitiendo ver todas las candidaturas
+     * Opcionalmente filtra por el userId si se proporciona (para filtrar por usuario)
+     * Busca coincidencias en texto usando LIKE (en cargo, notas, nombre de empresa)
+     * Las búsquedas son case-insensitive
+     * 
+     * @param q Texto de búsqueda general para cargo, notas o empresa - Opcional
+     * @param userId ID del usuario propietario para filtrar (opcional para administradores)
+     * @param pageable Objeto para paginación y ordenamiento
+     * @return Página de candidaturas que cumplen los criterios especificados
+     */
+    @Query("SELECT c FROM Candidatura c WHERE " +
+        // Si q es null, esta condición se ignora; si no, busca en cargo, notas o empresa
+        "(:q IS NULL OR LOWER(c.cargo) LIKE LOWER(CONCAT('%', :q, '%')) " +
+        "OR LOWER(c.notas) LIKE LOWER(CONCAT('%', :q, '%')) " + 
+        "OR LOWER(c.empresa.nombre) LIKE LOWER(CONCAT('%', :q, '%'))) AND " +
+        // Si userId es null, esta condición se ignora; si no, filtra por ese usuario
+        "(:userId IS NULL OR c.user.id = :userId) " +
+        "ORDER BY c.fecha DESC")
+        Page<Candidatura> buscarCandidaturasAdmin(
+            @Param("q") String q,
+            @Param("userId") UUID userId,
+            Pageable pageable);
+    /**
+     * Encuentra todas las candidaturas asociadas a un reclutador especifico.
+     * 
+     * @param reclutadorId ID del reclutador
+     * @param pageable Ibjeto de paginacion
+     * @return Pagina de candidaturas asociadas al reclutador
+     */
+    @Query("SELECT c FROM Candidatura c JOIN c.reclutadores r WHERE r.id = :reclutadorId")
+    Page<Candidatura> findByReclutadoresId(@Param("reclutadorId") UUID reclutadorId, Pageable pageable);
+
+    /**
+     * Encuentra las candidaturas de un usuario especifico asociadas a un reclutador.
+     * 
+     * @param reclutadorId ID del reclutador
+     * @param userId ID del usuario
+     * @param pageable Ibjeto de paginacion
+     * @return Pagina de candidaturas asociadas al usuario y reclutador
+     */
+    @Query("SELECT c FROM Candidatura c JOIN c.reclutadores r WHERE r.id = :reclutadorId AND c.user.id = :userId")
+    Page<Candidatura> findByReclutadoresIdAndUserId(@Param("reclutadorId") UUID reclutadorId, @Param("userId") UUID userId, Pageable pageable);
 
 }
