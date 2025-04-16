@@ -147,4 +147,35 @@ public class EmpresaServiceImpl implements EmpresaService{
         }).collect(Collectors.toList());
 
     }
+
+
+    /**
+     * Elimina múltiples empresas por sus IDs.
+     *Se utiliza @Transactional porque:
+     *1. Es una operación que modifica datos (eliminación)
+     *2. Garantiza la integridad de los datos si la eliminación falla
+     */
+    @Override
+    @Transactional
+    public int deleteAllByIds(List<UUID> ids) {
+        int count = 0;
+
+        // Filtramos solos los IDs que existen
+        List<UUID> existingIdsd = ids.stream()
+                .filter(empresaRepository::existsById)
+                .toList();
+
+        if(!existingIdsd.isEmpty()){
+            try {
+                // Eliminar cada empresa
+                for(UUID id : existingIdsd){
+                    empresaRepository.deleteById(id);
+                    count++;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return count;
+    }
 }

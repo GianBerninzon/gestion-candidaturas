@@ -74,4 +74,12 @@ public interface EmpresaService {
      * @return Lista de empresas con información de usuarios asociados
      */
     List<EmpresaWithUsersDTO> findAllWithAssociatedUsers();
+
+    /**
+     * Elimina múltiples empresas por sus identificadores.
+     *
+     * @param ids Lista de identificadores únicos de las empresas a eliminar.
+     * @return Numero de empresas eliminadas.
+     */
+    int deleteAllByIds(List<UUID> ids);
 }

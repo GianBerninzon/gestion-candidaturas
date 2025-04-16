@@ -15,7 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -222,6 +224,35 @@ public class EmpresaController {
         boolean eliminada = empresaService.deleteById(id);
         return  eliminada ? ResponseEntity.noContent().build() :
                 ResponseEntity.notFound().build();
+    }
+
+    /**
+     * Elimina multiples empresas por sus IDs (solo administradores).
+     * 
+     * @param ids Lista de IDs de empresas a eliminar
+     * @return ResponseEntity con el número de empresas eliminadas.
+     * 
+     * @see RF-08: Eliminación de empresas (solo administradores)
+     */
+    @DeleteMapping("/batch")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ROOT')")
+    public ResponseEntity<Map<String, Object>> deleteEmpresasBatch(@RequestBody List<UUID> ids) {
+        // Validar que la lista no este vacia
+        if(ids == null || ids.isEmpty()){
+            return ResponseEntity.badRequest().body(Map.of(
+                "error", "La lista de IDs no puede estar vacía"
+            ));
+        }
+
+        //Eliminar las empresas
+        int eliminadas = empresaService.deleteAllByIds(ids);
+
+        //Devolver respuesta con el conteo de eliminaciones
+        Map<String, Object> response = new HashMap<>();
+        response.put("eliminadas", eliminadas);
+        response.put("total", ids.size());
+
+        return ResponseEntity.ok(response); 
     }
 
 //    /**
