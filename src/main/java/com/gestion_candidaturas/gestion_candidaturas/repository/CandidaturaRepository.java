@@ -132,4 +132,22 @@ public interface CandidaturaRepository extends JpaRepository<Candidatura, UUID> 
     @Query("SELECT c FROM Candidatura c JOIN c.reclutadores r WHERE r.id = :reclutadorId AND c.user.id = :userId")
     Page<Candidatura> findByReclutadoresIdAndUserId(@Param("reclutadorId") UUID reclutadorId, @Param("userId") UUID userId, Pageable pageable);
 
+    /**
+     * Verifica si existe una candidatura para un usuario y una empresa.
+ 
+     * @param userId ID del usuario
+     * @param empresaId ID de la empresa
+     * @return true si existe, false si no existe
+     */
+    @Query("SELECT COUNT (c) > 0 FROM Candidatura c WHERE c.user.id = :userId AND c.empresa.id = :empresaId")
+    boolean existsByUserIdAndEmpresaId(@Param("userId") UUID userId, @Param("empresaId") UUID empresaId);
+
+    /**
+     * Busca todas las candidaturas asociadas a una empresa especifica.
+     * 
+     * @param empresaId de la empresa
+     * @return Lista de candidaturas asociadas a la empresa
+     */
+    Page<Candidatura> findByEmpresaId(UUID empresaId, Pageable pageable);
+
 }
