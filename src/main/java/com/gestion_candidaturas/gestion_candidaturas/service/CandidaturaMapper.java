@@ -6,9 +6,11 @@ import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import com.gestion_candidaturas.gestion_candidaturas.dto.CandidaturaDTO;
 import com.gestion_candidaturas.gestion_candidaturas.dto.CandidaturaWithEmpresaDTO;
 import com.gestion_candidaturas.gestion_candidaturas.dto.EmpresaDTO;
 import com.gestion_candidaturas.gestion_candidaturas.dto.PageResponseDTO;
+import com.gestion_candidaturas.gestion_candidaturas.dto.ReclutadorDTO;
 import com.gestion_candidaturas.gestion_candidaturas.dto.UserResumenDTO;
 import com.gestion_candidaturas.gestion_candidaturas.model.Candidatura;
 import com.gestion_candidaturas.gestion_candidaturas.model.Empresa;
@@ -109,6 +111,39 @@ public class CandidaturaMapper {
         //return new PageResponseDTO<>(dtoPage);
 
         return new PageResponseDTO<>(candidaturasPage, this::toResponseDTO);
+    }
+
+    public CandidaturaDTO toDTO(Candidatura candidatura){
+        CandidaturaDTO dto = new CandidaturaDTO();
+        dto.setId(candidatura.getId());
+        dto.setCargo(candidatura.getCargo());
+        dto.setEstado(candidatura.getEstado());
+        dto.setNotas(candidatura.getNotas());
+        dto.setFecha(candidatura.getFecha());
+
+        //Incluir información del usuario
+        if(candidatura.getUser() != null){
+            UserResumenDTO userInfo = new UserResumenDTO();
+            userInfo.setId(candidatura.getUser().getId());
+            userInfo.setUsername(candidatura.getUser().getUsername());
+            dto.setUserInfo(userInfo);
+        }
+
+        // Incluir información de los reclutadores
+        if(candidatura.getReclutadores() != null && !candidatura.getReclutadores().isEmpty()){
+            List<ReclutadorDTO> reclutadoresDTO = candidatura.getReclutadores().stream()
+                .map(reclutador -> {
+                    ReclutadorDTO recDTO = new ReclutadorDTO();
+                    recDTO.setId(reclutador.getId());
+                    recDTO.setNombre(reclutador.getNombre());
+                    recDTO.setLinkinUrl(reclutador.getLinkinUrl());
+                    return recDTO;
+                })
+                .collect(Collectors.toList());
+            dto.setReclutadores(reclutadoresDTO);
+        }
+
+        return dto;
     }
 
 
