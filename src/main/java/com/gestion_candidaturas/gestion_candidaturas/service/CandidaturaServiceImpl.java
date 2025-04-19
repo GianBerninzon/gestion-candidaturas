@@ -191,5 +191,19 @@ public class CandidaturaServiceImpl implements CandidaturaService{
        return count;
     }
 
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsByUserIdAndEmpresaId(UUID userId, UUID empresaId) {
+        return candidaturaRepository.existsByUserIdAndEmpresaId(userId, empresaId);
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Candidatura> findByEmpresaId(UUID empresaId, Pageable pageable) {
+        return candidaturaRepository.findByEmpresaId(empresaId, pageable);
+    }
+
     
 }

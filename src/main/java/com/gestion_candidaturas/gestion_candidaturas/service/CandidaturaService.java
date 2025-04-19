@@ -133,4 +133,21 @@ public interface CandidaturaService {
      * @return El numero de candidaturas eliminadas.
      */
     int deleteAllByIds(List<UUID> ids);
+
+    /**
+     * Verifica si un usuario tiene candidaturas asociadas a una empresa específica.
+     * 
+     * @param userId ID del usuario
+     * @param empresaId ID de la empresa
+     * @return true si el usuario tiene candidaturas asociadas a la empresa, false en caso contrario
+     */
+    boolean existsByUserIdAndEmpresaId(UUID userId, UUID empresaId);
+
+    /**
+     * Recupera todas las candidaturas asociadas a una empresa especifica.
+ 
+     * @param empresaId ID de la empresa
+     * @return Lista de candidaturas asociadas a la empresa
+     */
+    Page<Candidatura> findByEmpresaId(UUID empresaId, Pageable pageable);
 }
