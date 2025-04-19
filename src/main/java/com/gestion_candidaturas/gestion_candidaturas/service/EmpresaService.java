@@ -82,4 +82,12 @@ public interface EmpresaService {
      * @return Numero de empresas eliminadas.
      */
     int deleteAllByIds(List<UUID> ids);
+
+    /**
+     * Verifica si existe una empresa con el ID especificado.
+     *
+     * @param id Identificador único de la empresa a buscar
+     * @return true si la empresa existe, false si no.
+     */
+    boolean existsById(UUID id);
 }

@@ -1,10 +1,18 @@
 package com.gestion_candidaturas.gestion_candidaturas.controller;
 
+import com.gestion_candidaturas.gestion_candidaturas.dto.CandidaturaDTO;
 import com.gestion_candidaturas.gestion_candidaturas.dto.EmpresaDTO;
+import com.gestion_candidaturas.gestion_candidaturas.dto.EmpresaWithCandidaturasDTO;
 import com.gestion_candidaturas.gestion_candidaturas.dto.EmpresaWithUsersDTO;
 import com.gestion_candidaturas.gestion_candidaturas.dto.PageResponseDTO;
+import com.gestion_candidaturas.gestion_candidaturas.model.Candidatura;
 import com.gestion_candidaturas.gestion_candidaturas.model.Empresa;
+import com.gestion_candidaturas.gestion_candidaturas.model.Role;
+import com.gestion_candidaturas.gestion_candidaturas.model.User;
+import com.gestion_candidaturas.gestion_candidaturas.service.CandidaturaMapper;
+import com.gestion_candidaturas.gestion_candidaturas.service.CandidaturaService;
 import com.gestion_candidaturas.gestion_candidaturas.service.EmpresaService;
+import com.gestion_candidaturas.gestion_candidaturas.service.UserService;
 import com.gestion_candidaturas.gestion_candidaturas.util.PaginacionUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Controlador REST para operaciones relacionadas con empresas.
@@ -31,17 +40,29 @@ import java.util.UUID;
 @RequestMapping("/api/empresas")
 public class EmpresaController {
 
+    private final AuthController authController;
+
     private final EmpresaService empresaService;
+    private final UserService userService;
+    private final CandidaturaService candidaturaService;
+    private final CandidaturaMapper candidaturaMapper;
 
 
     /**
      * Constructor para inyección de dependencias.
      *
      * @param empresaService Servicio para operaciones con empresas
+     * @param userService Servicio para operaciones con usuarios
+     * @param candidaturaService Servicio para operaciones con candidaturas
+     * @param candidaturaMapper Mapper para convertir entre entidades y DTOs
      */
     @Autowired
-    public EmpresaController(EmpresaService empresaService){
+    public EmpresaController(EmpresaService empresaService, UserService userService, CandidaturaService candidaturaService, CandidaturaMapper candidaturaMapper, AuthController authController){
         this.empresaService = empresaService;
+        this.userService = userService;
+        this.candidaturaService = candidaturaService;
+        this.candidaturaMapper = candidaturaMapper;
+        this.authController = authController;
     }
 
     /**
@@ -73,17 +94,40 @@ public class EmpresaController {
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
-    public ResponseEntity<PageResponseDTO<Empresa>> getAllEmpresas(
+    public ResponseEntity<PageResponseDTO<Map<String, Object>>> getAllEmpresas(
             @RequestParam(defaultValue = "0")int page,
             @RequestParam(defaultValue = "10")int size,
             @RequestParam(defaultValue = "nombre, asc") String[] sort){
+        // Obtener el usuario actual
+        User currentUser = userService.getCurrentUser();
+
         // Crear objeto Pageable con la informacion de paginacion y ordenamiento
         Pageable pageable = PaginacionUtil.crearPageable(page, size, sort);
 
-        // Se obtienen todas las empresa paginadas - La logica de filtrado por rol se maneja en el servicio
-        Page<Empresa> empresas = empresaService.findAll(pageable);
+        // Se obtienen todas las empresa paginadas
+        Page<Empresa> empresasPage = empresaService.findAll(pageable);
 
-        return ResponseEntity.ok(new PageResponseDTO<>(empresas));
+        //Convertir a un Page con Maps que incluyan la informacion adicional
+        Page<Map<String, Object>> erichedPage = empresasPage.map(empresa -> {
+            Map<String, Object> empresaMap = new HashMap<>();
+            empresaMap.put("id", empresa.getId());
+            empresaMap.put("nombre", empresa.getNombre());
+            empresaMap.put("correo", empresa.getCorreo());
+            empresaMap.put("telefono", empresa.getTelefono());
+            
+            // Agregar info de si el usuario tiene candidaturas en esta empresa
+            if(currentUser.hasRole("ADMIN") || currentUser.hasRole("ROOT")){
+                empresaMap.put("userHasCandidatura", true);
+            }else{
+                boolean hasCandidatura = candidaturaService.existsByUserIdAndEmpresaId(
+                    currentUser.getId(), empresa.getId());
+                empresaMap.put("userHasCandidatura", hasCandidatura);
+            }
+            return empresaMap;
+        });
+
+        // Crear y devolver la respuesta paginada
+        return ResponseEntity.ok(new PageResponseDTO<>(erichedPage));
     }
 
     /**
@@ -106,18 +150,71 @@ public class EmpresaController {
 
     /**
      * Obtiene una empresa por su ID.
+     * Los usuarios normales solo pueden ver empresas de sus candidaturas.
+     * Los administradores pueden ver cualquier empresa.
      *
      * @param id ID de la empresa
-     * @return La empresa si existe, 404 si no
+     * @return La empresa si existe y el usuario tiene acceso, error 404 o 403 en caso contrario
      *
      * @see RF-08: Consulta de información de empresas
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Empresa> getEmpresaById(@PathVariable UUID id) {
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ROOT')")
+    public ResponseEntity<?> getEmpresaById(
+        @PathVariable UUID id,
+        @RequestParam(required = false, defaultValue = "false") boolean includeCandidaturas,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "fecha, asc") String[] sort
+        ) {
+
         Optional<Empresa> empresa = empresaService.findById(id);
-        return empresa.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        if(empresa.isEmpty()){
+            return ResponseEntity.notFound().build();
+        }
+
+        // Obtener el usuario actual
+        User currentUser = userService.getCurrentUser();
+        System.out.println("Roles de usuario:" + currentUser.getRole());
+
+        // Verificar permisos: ADMIN/ROOT pueden ver cualquier empresa
+        // USER solo puede ver empresas asociadas a sus candidaturas
+        if(currentUser.getRole() == Role.USER){
+            // Verificar si el usuario tiene candidaturas en esta empresa
+            boolean tieneCandidatura = candidaturaService.existsByUserIdAndEmpresaId(currentUser.getId(), id);
+            if(!tieneCandidatura){
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
+
+        // Si se solicitan candidaturas y el usuario es admin o root, incluir candidaturas
+        if(includeCandidaturas && (currentUser.getRole() == Role.ADMIN || currentUser.getRole() == Role.ROOT)){
+            // Crear objeto pageable con la informacion de paginacion y ordenamiento
+            Pageable pageable = PaginacionUtil.crearPageable(page, size, sort);
+            
+            // Incluir candidaturas en el response
+            EmpresaWithCandidaturasDTO empresaDTO = new EmpresaWithCandidaturasDTO();
+            Empresa emp = empresa.get();
+            empresaDTO.setId(emp.getId());
+            empresaDTO.setNombre(emp.getNombre());
+            empresaDTO.setCorreo(emp.getCorreo());
+            empresaDTO.setTelefono(emp.getTelefono());
+
+            //Obtener candidaturas de esta empresa paginadas
+            Page<Candidatura> candidaturasPage = candidaturaService.findByEmpresaId(id, pageable);
+
+            //Obtener candidaturas de esta empresa
+            List<CandidaturaDTO> candidaturasDTO = candidaturasPage.getContent().stream()
+                .map(candidaturaMapper::toDTO)
+                .collect(Collectors.toList());
+
+            empresaDTO.setCandidaturas(candidaturasDTO);
+            
+            return ResponseEntity.ok(empresaDTO);
+        }
+
+        // Caso normal: devolver solo la empresa
+        return ResponseEntity.ok(empresa.get());
     }
 
     /**
@@ -182,7 +279,7 @@ public class EmpresaController {
      *
      * @param id ID de la empresa a actualizar
      * @param empresaDTO Datos actualizados
-     * @return La empresa actualizada, 404 si no existe
+     * @return La empresa actualizada, 404 si no existe, 403 si no tiene permiso
      *
      * @see RF-08: Actualización de información de empresas
      */
@@ -196,6 +293,19 @@ public class EmpresaController {
             return ResponseEntity.notFound().build();
         }
 
+        // Obtener el usuario actual
+        User currentUser = userService.getCurrentUser();
+
+        //Verificar permisos: ADMIN/ROOT pueden editar cualquier empresa
+        // USER solo puede editar empresas asociadas a sus candidaturas
+        if(currentUser.hasRole("USER") && !currentUser.hasRole("ADMIN") && !currentUser.hasRole("ROOT")){
+            //Verificar si el usuario tiene candidaturas en esta empresa
+            boolean tieneCandidatura = candidaturaService.existsByUserIdAndEmpresaId(currentUser.getId(), id);
+            if(!tieneCandidatura){
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
+        
         // Actualizar la empresa con los datos del DTO
         Empresa empresa = empresaExistente.get();
         empresa.setNombre(empresaDTO.getNombre());

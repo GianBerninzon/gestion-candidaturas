@@ -178,4 +178,11 @@ public class EmpresaServiceImpl implements EmpresaService{
         }
         return count;
     }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsById(UUID id) {
+        return empresaRepository.existsById(id);
+    }
 }
